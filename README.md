@@ -15,7 +15,7 @@ A camada visual existente é a fonte de verdade do produto. A migração para pr
 | Persistência | **Turso / libSQL** |
 | Auth admin | Cookie httpOnly assinado (HMAC) + bcrypt |
 | Deploy | Vercel |
-| Cache de conteúdo | Cache local do navegador + SWR + HTTP ETag |
+| Cache de conteúdo | Cache local do navegador + stale-while-revalidate + HTTP ETag |
 
 ## Persistência e cache
 
@@ -34,9 +34,9 @@ O cache local é limitado a aproximadamente **1,8 MB** para evitar transformar `
 
 **Credenciais, sessão administrativa e segredos não são armazenados nesse cache público.** Imagens continuam seguindo a estratégia própria de carregamento do site; o cache de conteúdo serve principalmente para os dados do CMS.
 
-A escolha de cache local para o payload pequeno e estruturado evita bloquear o primeiro paint com uma consulta ao banco. `localStorage` é síncrono, por isso o limite é deliberadamente conservador. Para dados maiores ou binários, a plataforma web oferece IndexedDB, que é assíncrono e apropriado para volumes estruturados maiores. urlMDN: IndexedDBhttps://developer.mozilla.org/pt-BR/docs/Web/API/IndexedDB_API
+A escolha de cache local para o payload pequeno e estruturado evita bloquear o primeiro paint com uma consulta ao banco. `localStorage` é síncrono, por isso o limite é deliberadamente conservador. Para dados maiores ou binários, a plataforma web oferece [IndexedDB](https://developer.mozilla.org/pt-BR/docs/Web/API/IndexedDB_API), que é assíncrono e apropriado para volumes estruturados maiores.
 
-A validação HTTP usa ETag/If-None-Match, permitindo que o servidor confirme uma versão inalterada com `304` sem retransmitir o corpo completo. urlMDN: ETaghttps://developer.mozilla.org/pt-BR/docs/Web/HTTP/Reference/Headers/ETag
+A validação HTTP usa [ETag/If-None-Match](https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Reference/Headers/ETag), permitindo que o servidor confirme uma versão inalterada com `304` sem retransmitir o corpo completo.
 
 ## Variáveis de ambiente
 
