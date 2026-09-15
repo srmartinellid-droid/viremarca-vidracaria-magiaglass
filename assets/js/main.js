@@ -256,8 +256,29 @@ function formatPhone(phone) {
   return phone;
 }
 
+function applySiteFavicon(settings) {
+  if (typeof document === 'undefined') return;
+  const logo = settings && settings.logo ? String(settings.logo).trim() : '';
+  if (!logo) return;
+
+  let icons = document.querySelectorAll('link[rel~="icon"]');
+  if (!icons.length) {
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    document.head.appendChild(link);
+    icons = [link];
+  }
+
+  icons.forEach(link => {
+    link.href = logo;
+    link.type = logo.startsWith('data:image/svg+xml') ? 'image/svg+xml' : (logo.startsWith('data:image/png') ? 'image/png' : (logo.startsWith('data:image/webp') ? 'image/webp' : (logo.startsWith('data:image/jpeg') || logo.startsWith('data:image/jpg') ? 'image/jpeg' : 'image/png')));
+    link.removeAttribute('sizes');
+  });
+}
+
 function applySiteLogo() {
   const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+  applySiteFavicon(settings);
   document.querySelectorAll('[data-site-logo]').forEach(el => {
     if (settings.logo) {
       el.innerHTML = '<img src="' + settings.logo + '" alt="Logo" class="logo-img-upload">';
