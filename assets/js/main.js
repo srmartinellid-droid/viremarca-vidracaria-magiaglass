@@ -2,16 +2,6 @@
    MAGIA GLASS - Main Frontend Scripts
    ============================================ */
 
-/* Keep the already-rendered document visible during normal page navigation.
-   The content cache still revalidates in the background, but navigation must
-   never hide the whole document while waiting for DOMContentLoaded. */
-(function stabilizePublicNavigation(){
-  if(typeof document==='undefined') return;
-  document.documentElement.classList.remove('mg-site-loading','mg-awaiting-data');
-  const transitionRules=document.getElementById('mg-navigation-transition-rules');
-  if(transitionRules) transitionRules.remove();
-})();
-
 document.addEventListener('DOMContentLoaded', () => {
   initNav();
   initWhatsApp();
