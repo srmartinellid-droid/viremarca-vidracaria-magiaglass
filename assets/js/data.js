@@ -6,8 +6,11 @@
 
 const STORAGE_KEYS = { services:'mg_services', gallery:'mg_gallery', settings:'mg_settings', home:'mg_home', password:'mg_admin_pass', auth:'mg_auth' };
 const CONTENT_KEY_MAP = { mg_services:'services', mg_gallery:'gallery', mg_settings:'settings', mg_home:'home' };
-const CONTENT_CACHE_KEY = 'mg_content_cache_v2';
-const CONTENT_CACHE_MAX_BYTES = 2400000;
+const CONTENT_CACHE_KEY = 'mg_content_cache_v3';
+const CONTENT_CACHE_VERSION = 3;
+/* Keep the synchronous localStorage cache below the browser's ~5 MiB localStorage ceiling.
+   The API rejects individual writes above 3 MB, so 4.4 MB leaves headroom for the cache envelope. */
+const CONTENT_CACHE_MAX_BYTES = 4400000;
 function contentKey(key){ return CONTENT_KEY_MAP[key] || key; }
 
 const DEFAULT_HOME = { badge:'Especialistas em vidros no Norte da Ilha', title:'Transformamos ambientes com <span>vidros sob medida</span>', description:'Box, sacadas, espelhos e projetos personalizados com acabamento impecável. Atendimento premium em Florianópolis e região.', stats:[{value:'10+',label:'Anos de experiência'},{value:'500+',label:'Projetos entregues'},{value:'100%',label:'Clientes satisfeitos'}] };
@@ -31,8 +34,8 @@ let _contentEtag = '';
 function xhr(method,url,body,headers){const x=new XMLHttpRequest();x.open(method,url,false);x.withCredentials=true;x.setRequestHeader('Content-Type','application/json');if(headers)Object.keys(headers).forEach(k=>x.setRequestHeader(k,headers[k]));if(method==='GET'){x.setRequestHeader('Cache-Control','no-cache');x.setRequestHeader('Pragma','no-cache');}try{x.send(body===undefined?null:JSON.stringify(body));}catch(e){return null;}return x;}
 function getData(key,defaultValue){const k=contentKey(key);return Object.prototype.hasOwnProperty.call(_serverData,k)?_serverData[k]:defaultValue;}
 function cacheAvailable(){try{return typeof localStorage!=='undefined';}catch(e){return false;}}
-function readContentCache(){if(!cacheAvailable())return null;try{const raw=localStorage.getItem(CONTENT_CACHE_KEY);if(!raw)return null;const cache=JSON.parse(raw);if(!cache||typeof cache!=='object'||!cache.data||typeof cache.data!=='object')return null;return cache;}catch(e){return null;}}
-function writeContentCache(data,etag){if(!cacheAvailable())return false;try{const payload=JSON.stringify({version:2,etag:etag||'',savedAt:Date.now(),data});if(new TextEncoder().encode(payload).byteLength>CONTENT_CACHE_MAX_BYTES)return false;localStorage.setItem(CONTENT_CACHE_KEY,payload);return true;}catch(e){return false;}}
+function readContentCache(){if(!cacheAvailable())return null;try{const raw=localStorage.getItem(CONTENT_CACHE_KEY);if(!raw)return null;const cache=JSON.parse(raw);if(!cache||typeof cache!=='object'||cache.version!==CONTENT_CACHE_VERSION||!cache.data||typeof cache.data!=='object')return null;return cache;}catch(e){return null;}}
+function writeContentCache(data,etag){if(!cacheAvailable())return false;try{const payload=JSON.stringify({version:CONTENT_CACHE_VERSION,etag:etag||'',savedAt:Date.now(),data});const bytes=new TextEncoder().encode(payload).byteLength;if(bytes>CONTENT_CACHE_MAX_BYTES)return false;localStorage.setItem(CONTENT_CACHE_KEY,payload);return true;}catch(e){return false;}}
 function publishDataUpdate(){if(typeof window==='undefined')return;window.dispatchEvent(new CustomEvent('mg:data-updated'));}
 function applyFreshContent(payload,etag){const data={...payload};delete data._meta;delete data.error;_serverData=data;_contentEtag=etag||'';writeContentCache(data,_contentEtag);if(typeof window!=='undefined'){window.__MG_DATA_READY=true;if(document.documentElement.classList.contains('mg-awaiting-data'))document.documentElement.classList.remove('mg-awaiting-data');}publishDataUpdate();}
 function refreshDataInBackground(){
@@ -90,16 +93,6 @@ function injectRuntimeUIRules(){
   `;
   document.head.appendChild(style);
 }
-function injectNavigationTransitionRules(){
-  if(typeof document==='undefined' || document.getElementById('mg-navigation-transition-rules')) return;
-  const style=document.createElement('style');
-  style.id='mg-navigation-transition-rules';
-  style.textContent=`
-    @view-transition { navigation: auto; }
-    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 1ms; }
-  `;
-  document.head.appendChild(style);
-}
 function isPublicSite(){return typeof window!=='undefined' && !window.location.pathname.includes('/admin/');}
 function markSiteReady(){if(typeof document==='undefined') return;document.documentElement.classList.remove('mg-site-loading');document.documentElement.classList.add('mg-site-ready');}
 function renderAdminBrandLogo(root,settings){
@@ -124,7 +117,6 @@ function applyAdminBranding(){
 if(typeof window!=='undefined'){
   const fontLink=document.createElement('link');fontLink.rel='stylesheet';fontLink.href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';document.head.appendChild(fontLink);
   injectRuntimeUIRules();
-  injectNavigationTransitionRules();
   if(isPublicSite()){document.documentElement.classList.add('mg-site-loading');}
   initData();
   applyAdminBranding();
