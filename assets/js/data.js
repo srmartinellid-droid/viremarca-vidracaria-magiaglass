@@ -3,7 +3,8 @@
    Server-backed persistence via Turso/libSQL
    ============================================ */
 
-const STORAGE_KEYS = { services:'mg_services', gallery:'mg_gallery', settings:'mg_settings', home:'mg_home', password:'mg_admin_pass', auth:'mg_auth' };
+// Content keys are the canonical API/Turso keys. Do not prefix these with "mg_".
+const STORAGE_KEYS = { services:'services', gallery:'gallery', settings:'settings', home:'home', password:'mg_admin_pass', auth:'mg_auth' };
 
 const DEFAULT_HOME = { badge:'Especialistas em vidros no Norte da Ilha', title:'Transformamos ambientes com <span>vidros sob medida</span>', description:'Box, sacadas, espelhos e projetos personalizados com acabamento impecável. Atendimento premium em Florianópolis e região.', stats:[{value:'10+',label:'Anos de experiência'},{value:'500+',label:'Projetos entregues'},{value:'100%',label:'Clientes satisfeitos'}] };
 const DEFAULT_SERVICES = [
