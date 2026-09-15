@@ -3,8 +3,9 @@
    Server-backed persistence via Turso/libSQL
    ============================================ */
 
-// Content keys are the canonical API/Turso keys. Do not prefix these with "mg_".
-const STORAGE_KEYS = { services:'services', gallery:'gallery', settings:'settings', home:'home', password:'mg_admin_pass', auth:'mg_auth' };
+const STORAGE_KEYS = { services:'mg_services', gallery:'mg_gallery', settings:'mg_settings', home:'mg_home', password:'mg_admin_pass', auth:'mg_auth' };
+const CONTENT_KEY_MAP = { mg_services:'services', mg_gallery:'gallery', mg_settings:'settings', mg_home:'home' };
+function contentKey(key){ return CONTENT_KEY_MAP[key] || key; }
 
 const DEFAULT_HOME = { badge:'Especialistas em vidros no Norte da Ilha', title:'Transformamos ambientes com <span>vidros sob medida</span>', description:'Box, sacadas, espelhos e projetos personalizados com acabamento impecável. Atendimento premium em Florianópolis e região.', stats:[{value:'10+',label:'Anos de experiência'},{value:'500+',label:'Projetos entregues'},{value:'100%',label:'Clientes satisfeitos'}] };
 const DEFAULT_SERVICES = [
@@ -23,12 +24,13 @@ const DEFAULT_COPIES = {google:[{title:'Box de Vidro Temperado – Florianópoli
 
 let _serverData = {};
 function xhr(method,url,body){const x=new XMLHttpRequest();x.open(method,url,false);x.withCredentials=true;x.setRequestHeader('Content-Type','application/json');try{x.send(body===undefined?null:JSON.stringify(body));}catch(e){return null;}return x;}
-function getData(key,defaultValue){return Object.prototype.hasOwnProperty.call(_serverData,key)?_serverData[key]:defaultValue;}
+function getData(key,defaultValue){const k=contentKey(key);return Object.prototype.hasOwnProperty.call(_serverData,k)?_serverData[k]:defaultValue;}
 function setData(key,value){
+  const k=contentKey(key);
   let requestBody;
-  try{requestBody={key,value};const bytes=new TextEncoder().encode(JSON.stringify(requestBody)).byteLength;if(bytes>3000000){alert('Os dados são grandes demais para salvar. Reduza a quantidade ou o tamanho das imagens.');return false;}}catch(e){alert('Não foi possível preparar os dados para salvar.');return false;}
+  try{requestBody={key:k,value};const bytes=new TextEncoder().encode(JSON.stringify(requestBody)).byteLength;if(bytes>3000000){alert('Os dados são grandes demais para salvar. Reduza a quantidade ou o tamanho das imagens.');return false;}}catch(e){alert('Não foi possível preparar os dados para salvar.');return false;}
   const x=xhr('POST','/api/content',requestBody);
-  if(x&&x.status>=200&&x.status<300){_serverData[key]=value;return true;}
+  if(x&&x.status>=200&&x.status<300){_serverData[k]=value;return true;}
   let message='Não foi possível salvar os dados.';
   if(!x)message='Não foi possível conectar ao servidor.';else if(x.status===401)message='Sua sessão administrativa expirou. Faça login novamente.';else if(x.status===413)message='Os dados são grandes demais para serem salvos. Reduza a quantidade/tamanho das imagens.';else{try{const payload=JSON.parse(x.responseText||'{}');if(payload.error)message=payload.error;}catch(e){}}
   alert(message);return false;
