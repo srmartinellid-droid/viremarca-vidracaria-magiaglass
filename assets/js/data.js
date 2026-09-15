@@ -79,7 +79,18 @@ function getData(key, defaultValue) {
 function setData(key, value) {
   const x = xhr('POST', '/api/content', { key, value });
   if (x && x.status >= 200 && x.status < 300) { _serverData[key] = value; return true; }
-  alert('Não foi possível salvar. Verifique a sessão administrativa.');
+
+  let message = 'Não foi possível salvar os dados.';
+  if (!x) message = 'Não foi possível conectar ao servidor.';
+  else if (x.status === 401) message = 'Sua sessão administrativa expirou. Faça login novamente.';
+  else if (x.status === 413) message = 'Os dados são grandes demais para serem salvos. Reduza a quantidade/tamanho das imagens.';
+  else {
+    try {
+      const payload = JSON.parse(x.responseText || '{}');
+      if (payload.error) message = payload.error;
+    } catch (e) {}
+  }
+  alert(message);
   return false;
 }
 
