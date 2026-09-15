@@ -96,7 +96,17 @@ function isAuthenticated() {
 
 function login(password) {
   const x = xhr('POST', '/api/auth/login', { password });
-  return !!(x && x.status >= 200 && x.status < 300);
+  if (x && x.status >= 200 && x.status < 300) {
+    window.__MG_LOGIN_ERROR = '';
+    return true;
+  }
+  try {
+    const payload = x ? JSON.parse(x.responseText) : null;
+    window.__MG_LOGIN_ERROR = payload && payload.error ? payload.error : 'Não foi possível autenticar.';
+  } catch (e) {
+    window.__MG_LOGIN_ERROR = 'Não foi possível conectar ao servidor.';
+  }
+  return false;
 }
 
 function logout() { xhr('POST', '/api/auth/logout'); }
