@@ -45,7 +45,7 @@
 
       try {
         if (typeof isAuthenticated === 'function' && isAuthenticated()) {
-          window.location.replace('dashboard.html');
+          window.location.replace('/admin/dashboard.html');
           return;
         }
       } catch (e) {}
@@ -55,7 +55,7 @@
         var pass = document.getElementById('password').value;
         try {
           if (login(pass)) {
-            window.location.replace('dashboard.html');
+            window.location.replace('/admin/dashboard.html');
           } else {
             showError(window.__MG_LOGIN_ERROR || 'Não foi possível autenticar.');
           }
