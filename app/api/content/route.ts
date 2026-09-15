@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 const defaults: Record<string, unknown> = { home: DEFAULT_HOME, services: DEFAULT_SERVICES, gallery: DEFAULT_GALLERY, settings: DEFAULT_SETTINGS };
 const allowed = new Set(Object.keys(defaults));
 const MAX_CONTENT_BYTES = 3_200_000;
+const MAX_GALLERY_IMAGES = 5;
 const CACHE_CONTROL = 'private, no-cache, stale-while-revalidate=60, stale-if-error=86400';
 
 function makeEtag(content: Record<string, unknown>) {
@@ -57,6 +58,15 @@ export async function POST(req: Request) {
     }
     if (!Object.prototype.hasOwnProperty.call(body, 'value')) {
       return NextResponse.json({ error: 'Valor ausente' }, { status: 400 });
+    }
+    if (body.key === 'gallery' && Array.isArray(body.value)) {
+      for (const item of body.value) {
+        if (!item || typeof item !== 'object') continue;
+        const images = Array.isArray(item.images) ? item.images : [];
+        if (images.length > MAX_GALLERY_IMAGES) {
+          return NextResponse.json({ error: `Cada publicação pode ter no máximo ${MAX_GALLERY_IMAGES} imagens.` }, { status: 400 });
+        }
+      }
     }
 
     await ensureSchema();
