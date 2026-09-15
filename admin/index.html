@@ -8,20 +8,13 @@
   <link rel="stylesheet" href="../assets/css/design-system.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%231E6A9E' width='32' height='32' rx='6'/%3E%3Ctext x='16' y='21' text-anchor='middle' fill='white' font-size='14' font-family='sans-serif' font-weight='700'%3EMG%3C/text%3E%3C/svg%3E">
   <style>
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 1.5rem;
-    }
-    .login-box { width: 100%; max-width: 400px; padding: 2.5rem; }
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:1.5rem; }
+    .login-box { width:100%; max-width:400px; padding:2.5rem; }
   </style>
 </head>
 <body>
   <div class="login-box glass">
-    <div style="text-align:center; margin-bottom: 2rem;">
+    <div style="text-align:center; margin-bottom:2rem;">
       <img src="../assets/images/logo-insta.jpeg" alt="Magia Glass" style="height:64px; margin:0 auto 1rem; border-radius:12px;" onerror="this.style.display='none'">
       <h2 style="font-family:var(--font-display);">Painel Admin</h2>
       <p style="color:var(--gray-600); font-size:0.9rem;">Magia Glass – Edição completa</p>
@@ -35,7 +28,7 @@
       <button type="submit" class="btn btn-primary" style="width:100%;">Entrar</button>
     </form>
     <p style="text-align:center; margin-top:1.5rem; font-size:0.8rem; color:var(--gray-600);">
-      Senha padrão: <code>magia2024</code><br>
+      Acesso administrativo protegido.<br>
       <a href="../index.html" style="color:var(--primary);">← Voltar ao site</a>
     </p>
   </div>
@@ -48,21 +41,6 @@
         if (!errEl) return;
         errEl.style.display = 'block';
         errEl.textContent = msg;
-      }
-
-      // Fallback se data.js não carregar
-      if (typeof login !== 'function') {
-        window.login = function (password) {
-          var stored = localStorage.getItem('mg_admin_pass') || 'magia2024';
-          if (password === stored) {
-            sessionStorage.setItem('mg_auth', 'true');
-            return true;
-          }
-          return false;
-        };
-        window.isAuthenticated = function () {
-          return sessionStorage.getItem('mg_auth') === 'true';
-        };
       }
 
       try {
@@ -79,11 +57,11 @@
           if (login(pass)) {
             window.location.replace('dashboard.html');
           } else {
-            showError('Senha incorreta. Use magia2024 (ou a senha que você definiu).');
+            showError('Senha incorreta.');
           }
         } catch (err) {
           console.error(err);
-          showError('Erro no login. Recarregue a página (Ctrl+F5).');
+          showError('Erro no login. Verifique a configuração do servidor.');
         }
       });
     })();
