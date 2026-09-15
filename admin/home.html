@@ -3,20 +3,20 @@
 <head>
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Editar Home | Magia Glass Admin</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../assets/css/design-system.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="../assets/css/design-system.css">
 </head>
 <body>
   <div class="admin-layout"><aside class="admin-sidebar"><div class="logo"><img src="../assets/images/logo-insta.jpeg" alt="" style="height:40px;border-radius:8px;"><div class="logo-text" style="color:white;">MAGIA GLASS<span style="color:rgba(255,255,255,0.6);">ADMIN</span></div></div>
     <nav class="admin-nav"><a href="dashboard.html">📊 Dashboard</a><a href="home.html">🏠 Editar Home</a><a href="services.html">🛠️ Serviços</a><a href="gallery.html">🖼️ Galeria</a><a href="marketing.html">📢 Marketing</a><a href="settings.html">⚙️ Configurações</a><a href="password.html">🔑 Alterar Senha</a><a href="../index.html" target="_blank">🌐 Ver Site</a><a href="#" onclick="logout(); location.href='index.html';">🚪 Sair</a></nav>
   </aside><main class="admin-main"><div class="admin-header"><h1 style="font-family:var(--font-display);" class="active">Editar Home</h1></div>
-    <div class="admin-card"><form id="home-form"><div class="form-group"><label>Badge (texto pequeno acima do título)</label><input type="text" id="badge" class="form-control"></div><div class="form-group"><label>Título (use &lt;span&gt;texto&lt;/span&gt; para destaque)</label><textarea id="title" class="form-control" rows="2"></textarea></div><div class="form-group"><label>Descrição</label><textarea id="description" class="form-control" rows="3"></textarea></div><h4 style="margin:1.5rem 0 1rem;">Estatísticas</h4><div id="stats-fields"></div><button type="submit" class="btn btn-primary mt-1">Salvar Home</button></form></div>
+    <div class="admin-card"><form id="home-form"><div class="form-group"><label>Título (use &lt;span&gt;texto&lt;/span&gt; para destaque)</label><textarea id="title" class="form-control" rows="2"></textarea></div><div class="form-group"><label>Descrição</label><textarea id="description" class="form-control" rows="3"></textarea></div><h4 style="margin:1.5rem 0 1rem;">Estatísticas</h4><div id="stats-fields"></div><button type="submit" class="btn btn-primary mt-1">Salvar Home</button></form></div>
   </main></div>
   <script src="../assets/js/data.js"></script><script>
     if (!isAuthenticated()) location.href = 'index.html';
-    const home = getData(STORAGE_KEYS.home, DEFAULT_HOME); document.getElementById('badge').value = home.badge || ''; document.getElementById('title').value = home.title || ''; document.getElementById('description').value = home.description || '';
+    const home = getData(STORAGE_KEYS.home, DEFAULT_HOME); document.getElementById('title').value = home.title || ''; document.getElementById('description').value = home.description || '';
     const statsEl = document.getElementById('stats-fields'); (home.stats || []).forEach((s, i) => { statsEl.innerHTML += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;"><div class="form-group" style="margin:0;"><label>Valor ${i+1}</label><input type="text" class="form-control stat-value" value="${s.value}"></div><div class="form-group" style="margin:0;"><label>Label ${i+1}</label><input type="text" class="form-control stat-label" value="${s.label}"></div></div>`; });
     document.getElementById('home-form').addEventListener('submit', e => { e.preventDefault(); const values = document.querySelectorAll('.stat-value'); const labels = document.querySelectorAll('.stat-label'); const stats = []; values.forEach((v, i) => stats.push({ value: v.value, label: labels[i].value }));
-      const saved = setData(STORAGE_KEYS.home, { badge: document.getElementById('badge').value, title: document.getElementById('title').value, description: document.getElementById('description').value, stats });
+      const saved = setData(STORAGE_KEYS.home, { badge: home.badge || '', title: document.getElementById('title').value, description: document.getElementById('description').value, stats });
       if (saved) alert('Home salva com sucesso!');
     });
   </script>
