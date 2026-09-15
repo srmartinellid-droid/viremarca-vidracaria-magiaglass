@@ -3,7 +3,6 @@
    ============================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
-  initData();
   initNav();
   initWhatsApp();
   applySiteLogo();
@@ -12,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderGalleryIfNeeded();
   initContactForm();
   initHeroCarousel();
+  if (typeof markSiteReady === 'function') markSiteReady();
 });
 
 function initNav() {
@@ -66,9 +66,9 @@ function initWhatsApp() {
 function renderHomeIfNeeded() {
   const home = getData(STORAGE_KEYS.home, DEFAULT_HOME);
   const badge = document.querySelector('[data-home="badge"]');
+  if (badge) badge.remove();
   const title = document.querySelector('[data-home="title"]');
   const desc = document.querySelector('[data-home="description"]');
-  if (badge) badge.textContent = home.badge;
   if (title) title.innerHTML = home.title;
   if (desc) desc.textContent = home.description;
 
@@ -117,7 +117,6 @@ function renderServicesIfNeeded() {
   const wa = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS).whatsapp;
   const services = getData(STORAGE_KEYS.services, DEFAULT_SERVICES)
     .sort((a, b) => a.order - b.order);
-  // Grade única 3 colunas — sem quebrar por categoria
   container.innerHTML = '<div class="services-grid">' +
     services.map(s => serviceCardHTML(s, wa, false)).join('') +
     '</div>';
@@ -132,12 +131,13 @@ function getItemImages(item) {
 function renderGalleryIfNeeded() {
   const container = document.querySelector('[data-gallery="grid"]');
   if (!container) return;
+  const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+  const wa = settings.whatsapp;
   const items = getData(STORAGE_KEYS.gallery, DEFAULT_GALLERY)
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   const pathPrefix = window.location.pathname.includes('/pages/') ? '../' : '';
-  const fallback = pathPrefix + 'assets/images/logo-insta.jpeg';
+  const fallback = settings.logo || (pathPrefix + 'assets/images/logo-insta.jpeg');
 
-  // Álbuns por item (clique abre o álbum da publicação)
   window._galleryAlbums = items.map(item => {
     const imgs = getItemImages(item);
     if (!imgs.length) imgs.push(fallback);
@@ -223,7 +223,6 @@ function lightboxPrev() {
   _photoIdx--;
   showAlbumPhoto();
 }
-// compat
 function openLightbox(idx) { openAlbum(0, idx); }
 
 document.addEventListener('keydown', e => {
@@ -259,12 +258,25 @@ function formatPhone(phone) {
 
 function applySiteLogo() {
   const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
-  const logos = document.querySelectorAll('[data-site-logo]');
-  logos.forEach(el => {
+  document.querySelectorAll('[data-site-logo]').forEach(el => {
     if (settings.logo) {
       el.innerHTML = '<img src="' + settings.logo + '" alt="Logo" class="logo-img-upload">';
     } else {
       el.innerHTML = '<div class="logo-wordmark"><div class="logo-name"><span class="magia">MAGIA</span><span class="glass">GLASS</span></div><div class="logo-tag">Vidraçaria</div></div>';
+    }
+  });
+
+  document.querySelectorAll('.footer-brand').forEach(brand => {
+    const legacy = brand.querySelector('img[src*="logo-insta"]');
+    if (legacy) {
+      if (settings.logo) {
+        legacy.src = settings.logo;
+        legacy.className = 'footer-brand-logo';
+        legacy.alt = 'Logo';
+        legacy.removeAttribute('style');
+      } else {
+        legacy.replaceWith(document.createRange().createContextualFragment('<div class="logo-wordmark"><div class="logo-name"><span class="magia">MAGIA</span><span class="glass">GLASS</span></div><div class="logo-tag">Vidraçaria</div></div>'));
+      }
     }
   });
 }
@@ -289,7 +301,6 @@ function initHeroCarousel() {
     slidesWrap.className = 'hero-slides';
     hero.insertBefore(slidesWrap, hero.firstChild);
   }
-  // esconde bg único antigo se existir
   const oldBg = document.getElementById('hero-parallax');
   if (oldBg) oldBg.style.display = 'none';
 
@@ -329,7 +340,6 @@ function initHeroCarousel() {
     setInterval(() => goSlide(current + 1), 5500);
   }
 
-  // parallax suave nos slides
   window.addEventListener('scroll', () => {
     const y = window.scrollY;
     slidesWrap.querySelectorAll('.hero-slide').forEach(el => {
