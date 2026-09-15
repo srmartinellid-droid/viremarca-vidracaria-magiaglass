@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketing | Magia Glass Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <style>
+    .pub-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (max-width: 1100px) { .pub-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .pub-grid { grid-template-columns: 1fr; } }
+    .pub-card {
+      transition: var(--transition-slow);
+      cursor: pointer;
+      border: 2px solid transparent;
+      padding: 1rem 1.1rem;
+      border-radius: var(--radius-lg);
+      background: white;
+      box-shadow: 0 4px 16px rgba(15,39,68,0.05);
+      min-height: 120px;
+    }
+    .pub-card:hover, .pub-card.selected {
+      border-color: var(--accent);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px rgba(46,184,160,0.15);
+    }
+    .pub-card.selected { background: var(--accent-soft); }
+    .ad-preview { background: #0F172A; color: white; border-radius: var(--radius-lg); padding: 1.25rem; font-size: 0.95rem; line-height: 1.55; min-height: 140px; white-space: pre-wrap; }
+    .platform-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+    .platform-tabs button { padding: 0.45rem 0.9rem; border-radius: 999px; border: 1.5px solid var(--gray-200); background: white; cursor: pointer; font-weight: 500; font-size: 0.85rem; }
+    .platform-tabs button.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
+    .result-item { background: var(--gray-50); border-radius: var(--radius-md); padding: 0.85rem; text-align: center; }
+    .result-item .val { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+    .result-item .lbl { font-size: 0.72rem; color: var(--gray-600); text-transform: uppercase; }
+    @media(max-width:768px){ .ad-grid{grid-template-columns:1fr!important;} }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="logo">
+        <img src="../assets/images/logo-insta.jpeg" alt="" style="height:48px;border-radius:10px;object-fit:contain;">
+        <div class="logo-text" style="color:white;">MAGIA GLASS<span style="color:rgba(255,255,255,0.6);">ADMIN</span></div>
+      </div>
+      <nav class="admin-nav">
+        <a href="dashboard.html">📊 Dashboard</a>
+        <a href="home.html">🏠 Editar Home</a>
+        <a href="services.html">🛠️ Serviços</a>
+        <a href="gallery.html">🖼️ Galeria</a>
+        <a href="marketing.html" class="active">📢 Marketing</a>
+        <a href="settings.html">⚙️ Configurações</a>
+        <a href="password.html">🔑 Alterar Senha</a>
+        <a href="../index.html" target="_blank">🌐 Ver Site</a>
+        <a href="#" onclick="logout(); location.href='index.html';">🚪 Sair</a>
+      </nav>
+    </aside>
+    <main class="admin-main">
+      <div class="admin-header">
+        <h1 style="font-family:var(--font-display);">Ferramentas de Marketing</h1>
+      </div>
+
+      <div class="admin-card">
+        <h3>Transformar publicação em anúncio</h3>
+        <p style="color:var(--gray-600);font-size:0.9rem;margin-bottom:1rem;">Selecione um item da galeria ou serviço e gere texto + link UTM para anúncios.</p>
+        <div class="pub-grid" id="pub-list"></div>
+        <div class="platform-tabs" id="platform-tabs">
+          <button type="button" class="active" data-platform="instagram">Instagram / Meta</button>
+          <button type="button" data-platform="google">Google Ads</button>
+          <button type="button" data-platform="facebook">Facebook</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="ad-grid">
+          <div>
+            <label style="font-weight:600;display:block;margin-bottom:0.4rem;">Prévia do anúncio</label>
+            <div class="ad-preview" id="ad-preview">Selecione uma publicação.</div>
+            <button class="btn btn-secondary btn-sm mt-1" onclick="copyAd()">Copiar texto</button>
+          </div>
+          <div>
+            <label style="font-weight:600;display:block;margin-bottom:0.4rem;">Link com UTM</label>
+            <div class="copy-box"><pre id="ad-utm-link" style="margin:0;word-break:break-all;">—</pre></div>
+            <button class="btn btn-primary btn-sm mt-1" onclick="copyUtm()">Copiar link</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tools-grid">
+        <div class="admin-card" style="margin:0;">
+          <h3>Gerador UTM</h3>
+          <div class="form-group"><label>URL base</label><input type="url" id="utm-url" class="form-control" value="https://vidracariamagiaglass.com.br/"></div>
+          <div class="form-group"><label>Origem</label>
+            <select id="utm-source" class="form-control">
+              <option value="google">Google Ads</option>
+              <option value="instagram">Instagram Ads</option>
+              <option value="facebook">Facebook Ads</option>
+              <option value="tiktok">TikTok Ads</option>
+              <option value="bio">Link da Bio</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Meio</label>
+            <select id="utm-medium" class="form-control">
+              <option value="cpc">CPC</option>
+              <option value="stories">Stories / Reels</option>
+              <option value="feed">Feed</option>
+              <option value="qr">QR Code</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Campanha</label><input type="text" id="utm-campaign" class="form-control" placeholder="box_norte_ilha"></div>
+          <button class="btn btn-primary" style="width:100%" onclick="generateUTM()">Gerar Link</button>
+          <div class="copy-box mt-1" id="utm-result" style="display:none;">
+            <pre id="utm-link" style="margin:0;word-break:break-all;"></pre>
+            <button class="btn btn-sm btn-secondary mt-1" onclick="copyText(\'utm-link\')">Copiar</button>
+          </div>
+        </div>
+        <div class="admin-card" style="margin:0;">
+          <h3>Calculadora de ROI</h3>
+          <div class="form-group"><label>Investimento (R$)</label><input type="number" id="roi-invest" class="form-control" value="1500"></div>
+          <div class="form-group"><label>Custo por lead (R$)</label><input type="number" id="roi-cpl" class="form-control" value="28"></div>
+          <div class="form-group"><label>Ticket médio (R$)</label><input type="number" id="roi-ticket" class="form-control" value="3200"></div>
+          <div class="form-group"><label>Conversão (%)</label><input type="number" id="roi-conv" class="form-control" value="18"></div>
+          <button class="btn btn-primary" style="width:100%" onclick="calcROI()">Calcular</button>
+          <div id="roi-results" style="display:none;margin-top:1rem;">
+            <div class="result-grid">
+              <div class="result-item"><div class="val" id="roi-leads">0</div><div class="lbl">Leads</div></div>
+              <div class="result-item"><div class="val" id="roi-clients">0</div><div class="lbl">Clientes</div></div>
+              <div class="result-item"><div class="val" id="roi-revenue">R$ 0</div><div class="lbl">Faturamento</div></div>
+              <div class="result-item"><div class="val" id="roi-pct" style="color:#2EB8A0;">0%</div><div class="lbl">ROI</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card mt-2">
+        <h3>Biblioteca de Copys</h3>
+        <div id="copies-container"></div>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/js/data.js"></script>
+  <script>
+    if (!isAuthenticated()) location.href = 'index.html';
+    let selectedPub = null, currentPlatform = 'instagram';
+
+    function loadPubs() {
+      const list = getData(STORAGE_KEYS.gallery, DEFAULT_GALLERY);
+      const services = getData(STORAGE_KEYS.services, DEFAULT_SERVICES);
+      const items = [
+        ...list.map(g => ({ id: g.id, title: g.title, description: g.description, type: 'gallery' })),
+        ...services.filter(s => s.featured).map(s => ({ id: s.id, title: s.title, description: s.description, type: 'service' }))
+      ];
+      document.getElementById('pub-list').innerHTML = items.map(item => `
+        <div class="pub-card" data-id="${item.id}" onclick="selectPub('${item.id}')">
+          <div style="font-size:0.7rem;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">${item.type === 'gallery' ? 'Publicação' : 'Serviço'}</div>
+          <strong style="display:block;margin:0.35rem 0 0.25rem;font-size:1rem;line-height:1.3;">${item.title}</strong>
+          <p style="font-size:0.85rem;color:var(--gray-600);margin:0;line-height:1.45;">${(item.description||'').slice(0,90)}${(item.description||'').length>90?'…':''}</p>
+        </div>`).join('');
+      window._pubItems = items;
+    }
+    function selectPub(id) {
+      selectedPub = (window._pubItems||[]).find(i => i.id === id);
+      document.querySelectorAll('.pub-card').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
+      buildAd();
+    }
+    document.getElementById('platform-tabs').addEventListener('click', e => {
+      if (e.target.tagName !== 'BUTTON') return;
+      document.querySelectorAll('#platform-tabs button').forEach(b => b.classList.remove('active'));
+      e.target.classList.add('active');
+      currentPlatform = e.target.dataset.platform;
+      buildAd();
+    });
+    function buildAd() {
+      if (!selectedPub) return;
+      const t = selectedPub.title, d = selectedPub.description || '', phone = '(48) 99222-0593';
+      let text = '';
+      if (currentPlatform === 'instagram') text = '✨ ' + t + '\n\n' + d + '\n\n👉 Orçamento no WhatsApp\n📲 ' + phone + '\n@magiaglass_ | Norte da Ilha';
+      else if (currentPlatform === 'google') text = t + ' – Florianópolis Norte da Ilha\n' + d.slice(0,80) + '… | Magia Glass';
+      else text = t + '\n\n' + d + '\n\nWhatsApp ' + phone;
+      document.getElementById('ad-preview').textContent = text.replace(/\\n/g, '\n');
+      const camp = t.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40);
+      const src = currentPlatform === 'google' ? 'google' : currentPlatform === 'facebook' ? 'facebook' : 'instagram';
+      document.getElementById('ad-utm-link').textContent = 'https://vidracariamagiaglass.com.br/?utm_source=' + src + '&utm_medium=cpc&utm_campaign=' + camp;
+    }
+    function copyAd() { if (!selectedPub) return alert('Selecione uma publicação'); navigator.clipboard.writeText(document.getElementById('ad-preview').textContent).then(()=>alert('Copiado!')); }
+    function copyUtm() { if (!selectedPub) return alert('Selecione uma publicação'); navigator.clipboard.writeText(document.getElementById('ad-utm-link').textContent).then(()=>alert('Copiado!')); }
+    function generateUTM() {
+      try {
+        const url = new URL(document.getElementById('utm-url').value || 'https://vidracariamagiaglass.com.br/');
+        url.searchParams.set('utm_source', document.getElementById('utm-source').value);
+        url.searchParams.set('utm_medium', document.getElementById('utm-medium').value);
+        url.searchParams.set('utm_campaign', document.getElementById('utm-campaign').value || 'campanha');
+        document.getElementById('utm-link').textContent = url.toString();
+        document.getElementById('utm-result').style.display = 'block';
+      } catch(e) { alert('URL inválida'); }
+    }
+    function calcROI() {
+      const invest = +document.getElementById('roi-invest').value||0;
+      const cpl = +document.getElementById('roi-cpl').value||1;
+      const ticket = +document.getElementById('roi-ticket').value||0;
+      const conv = (+document.getElementById('roi-conv').value||0)/100;
+      const leads = Math.floor(invest/cpl);
+      const clients = Math.floor(leads*conv);
+      const revenue = clients*ticket;
+      const roi = invest>0 ? Math.round(((revenue-invest)/invest)*100) : 0;
+      document.getElementById('roi-leads').textContent = leads;
+      document.getElementById('roi-clients').textContent = clients;
+      document.getElementById('roi-revenue').textContent = 'R$ '+revenue.toLocaleString('pt-BR');
+      document.getElementById('roi-pct').textContent = roi+'%';
+      document.getElementById('roi-results').style.display = 'block';
+    }
+    function copyText(id) { navigator.clipboard.writeText(document.getElementById(id).textContent).then(()=>alert('Copiado!')); }
+    function renderCopies() {
+      const copies = DEFAULT_COPIES; let html = '';
+      [['google','Google Ads'],['instagram','Instagram / Meta'],['facebook','Facebook']].forEach(([key,label]) => {
+        html += '<h4 style="color:var(--primary);margin:1rem 0 0.5rem;">'+label+'</h4>';
+        (copies[key]||[]).forEach(c => {
+          html += '<div class="copy-box"><strong>'+c.title+'</strong><pre style="margin:0.4rem 0;white-space:pre-wrap;">'+c.text+'</pre>';
+          html += '<button class="btn btn-sm btn-secondary copy-btn" data-text="'+encodeURIComponent(c.text)+'">Copiar</button></div>';
+        });
+      });
+      document.getElementById('copies-container').innerHTML = html;
+      document.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.onclick = () => navigator.clipboard.writeText(decodeURIComponent(btn.dataset.text)).then(()=>alert('Copiado!'));
+      });
+    }
+    loadPubs(); renderCopies();
+  </script>
+</body>
+</html>

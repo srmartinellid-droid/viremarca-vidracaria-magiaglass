@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Magia Glass Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <link rel="icon" href="../assets/images/logo-insta.jpeg">
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="logo">
+        <img src="../assets/images/logo-insta.jpeg" alt="" style="height:40px; border-radius:8px;">
+        <div class="logo-text" style="color:white;">MAGIA GLASS<span style="color:rgba(255,255,255,0.6);">ADMIN</span></div>
+      </div>
+            <nav class="admin-nav">
+        <a href="dashboard.html">📊 Dashboard</a>
+        <a href="home.html">🏠 Editar Home</a>
+        <a href="services.html">🛠️ Serviços</a>
+        <a href="gallery.html">🖼️ Galeria</a>
+        <a href="marketing.html">📢 Marketing</a>
+        <a href="settings.html">⚙️ Configurações</a>
+        <a href="password.html">🔑 Alterar Senha</a>
+        <a href="../index.html" target="_blank">🌐 Ver Site</a>
+        <a href="#" onclick="logout(); location.href='index.html';">🚪 Sair</a>
+      </nav>
+    </aside>
+    <main class="admin-main">
+      <div class="admin-header">
+        <h1 style="font-family:var(--font-display); font-size:1.75rem;" class="active">Dashboard</h1>
+        <span class="badge badge-success">Logado</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1.25rem; margin-bottom:2rem;">
+        <div class="admin-card" style="margin:0;">
+          <div style="font-size:0.85rem; color:var(--gray-600);">Serviços</div>
+          <div style="font-size:2rem; font-weight:700; color:var(--primary);" id="stat-services">0</div>
+        </div>
+        <div class="admin-card" style="margin:0;">
+          <div style="font-size:0.85rem; color:var(--gray-600);">Itens na Galeria</div>
+          <div style="font-size:2rem; font-weight:700; color:var(--primary);" id="stat-gallery">0</div>
+        </div>
+        <div class="admin-card" style="margin:0;">
+          <div style="font-size:0.85rem; color:var(--gray-600);">WhatsApp</div>
+          <div style="font-size:1.1rem; font-weight:600;" id="stat-phone">—</div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>Ações Rápidas</h3>
+        <div style="display:flex; flex-wrap:wrap; gap:0.75rem;">
+          <a href="home.html" class="btn btn-primary btn-sm">Editar textos da Home</a>
+          <a href="services.html" class="btn btn-secondary btn-sm">Gerenciar Serviços</a>
+          <a href="gallery.html" class="btn btn-secondary btn-sm">Adicionar na Galeria</a>
+          <a href="password.html" class="btn btn-outline btn-sm">Alterar Senha</a>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>Como usar</h3>
+        <ul style="color:var(--gray-600); font-size:0.95rem; line-height:1.8;">
+          <li>• <strong>Home</strong>: edite badge, título, descrição e estatísticas.</li>
+          <li>• <strong>Serviços</strong>: adicione, edite ou remova categorias e serviços (persiste no navegador).</li>
+          <li>• <strong>Galeria</strong>: faça upload de imagens locais (base64) e edite títulos/descrições.</li>
+          <li>• <strong>Configurações</strong>: telefone, Instagram, endereço, horário.</li>
+          <li>• Dados ficam salvos no localStorage (demo). Para produção com Turso, veja o README.</li>
+        </ul>
+      </div>
+    </main>
+  </div>
+
+  <script src="../assets/js/data.js"></script>
+  <script>
+    if (!isAuthenticated()) location.href = 'index.html';
+    document.getElementById('stat-services').textContent = getData(STORAGE_KEYS.services, []).length;
+    document.getElementById('stat-gallery').textContent = getData(STORAGE_KEYS.gallery, []).length;
+    const s = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+    document.getElementById('stat-phone').textContent = formatPhone(s.phone || '');
+    function formatPhone(p) {
+      p = (p || '').replace(/\D/g, '');
+      if (p.length === 11) return `(${p.slice(0,2)}) ${p.slice(2,7)}-${p.slice(7)}`;
+      return p || '—';
+    }
+  </script>
+</body>
+</html>

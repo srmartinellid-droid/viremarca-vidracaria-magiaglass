@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurações | Magia Glass Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/design-system.css">
+  <style>
+    .hero-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.85rem; margin-top: 1rem; }
+    .hero-thumb {
+      position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 16/10;
+      border: 1px solid rgba(30,106,158,0.15); background: #f1f5f9;
+    }
+    .hero-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .hero-thumb button {
+      position: absolute; top: 6px; right: 6px; border: none; background: rgba(15,39,68,0.85);
+      color: #fff; border-radius: 999px; width: 28px; height: 28px; cursor: pointer; font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <div class="logo">
+        <span data-site-logo style="filter:brightness(10);"></span>
+      </div>
+      <nav class="admin-nav">
+        <a href="dashboard.html">📊 Dashboard</a>
+        <a href="home.html">🏠 Editar Home</a>
+        <a href="services.html">🛠️ Serviços</a>
+        <a href="gallery.html">🖼️ Galeria</a>
+        <a href="marketing.html">📢 Marketing</a>
+        <a href="settings.html" class="active">⚙️ Configurações</a>
+        <a href="password.html">🔑 Alterar Senha</a>
+        <a href="../index.html" target="_blank">🌐 Ver Site</a>
+        <a href="#" onclick="logout(); location.href='index.html';">🚪 Sair</a>
+      </nav>
+    </aside>
+    <main class="admin-main">
+      <div class="admin-header">
+        <h1 style="font-family:var(--font-display);">Configurações do Site</h1>
+      </div>
+
+      <div class="admin-card">
+        <h3>Logo do site</h3>
+        <p style="color:var(--gray-600);font-size:0.9rem;margin-bottom:1rem;">Envie o logotipo. Sem arquivo, o site usa o nome tipográfico da marca.</p>
+        <div class="form-group">
+          <label>Arquivo do logo (PNG, JPG ou SVG)</label>
+          <input type="file" id="logo-file" class="form-control" accept="image/*">
+        </div>
+        <div id="logo-preview-wrap" style="display:none;margin:1rem 0;">
+          <img id="logo-preview" alt="Prévia" style="max-height:64px;max-width:220px;object-fit:contain;background:#f8fafb;padding:8px;border-radius:8px;border:1px solid #e2e8f0;">
+          <div style="margin-top:0.75rem;">
+            <button type="button" class="btn btn-outline btn-sm" id="logo-remove">Excluir logo</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>Imagens do topo (Hero — carrossel)</h3>
+        <p style="color:var(--gray-600);font-size:0.9rem;margin-bottom:1rem;">Adicione uma ou várias imagens. Elas alternam automaticamente no topo da home. Preferência: fotos largas e horizontais.</p>
+        <div class="form-group">
+          <label>Adicionar imagem(ns)</label>
+          <input type="file" id="hero-files" class="form-control" accept="image/*" multiple>
+        </div>
+        <div class="hero-thumbs" id="hero-thumbs"></div>
+      </div>
+
+      <div class="admin-card">
+        <h3>Nível de degradê (global)</h3>
+        <p style="color:var(--gray-600);font-size:0.9rem;margin-bottom:1rem;">Controla o overlay escuro no hero e nas imagens divisórias.</p>
+        <div class="form-group">
+          <label>Intensidade: <strong id="grad-val">72%</strong></label>
+          <input type="range" id="gradient-opacity" min="20" max="90" value="72" style="width:100%;">
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>Imagens divisórias (3 faixas)</h3>
+        <p style="color:var(--gray-600);font-size:0.9rem;margin-bottom:1.25rem;">Imagens largas entre seções da home, com parallax.</p>
+        <div style="display:grid;gap:1.5rem;">
+          <div class="glass" style="padding:1.25rem;">
+            <label style="font-weight:600;">Divisor 1</label>
+            <input type="file" id="div1-file" class="form-control" accept="image/*" style="margin:0.5rem 0;">
+            <input type="text" id="div1-title" class="form-control" placeholder="Título" style="margin-bottom:0.5rem;">
+            <input type="text" id="div1-text" class="form-control" placeholder="Texto curto" style="margin-bottom:0.5rem;">
+            <img id="div1-preview" style="width:100%;height:100px;object-fit:cover;border-radius:8px;display:none;">
+            <button type="button" class="btn btn-outline btn-sm mt-1" id="div1-remove" style="display:none;">Excluir</button>
+          </div>
+          <div class="glass" style="padding:1.25rem;">
+            <label style="font-weight:600;">Divisor 2</label>
+            <input type="file" id="div2-file" class="form-control" accept="image/*" style="margin:0.5rem 0;">
+            <input type="text" id="div2-title" class="form-control" placeholder="Título" style="margin-bottom:0.5rem;">
+            <input type="text" id="div2-text" class="form-control" placeholder="Texto curto" style="margin-bottom:0.5rem;">
+            <img id="div2-preview" style="width:100%;height:100px;object-fit:cover;border-radius:8px;display:none;">
+            <button type="button" class="btn btn-outline btn-sm mt-1" id="div2-remove" style="display:none;">Excluir</button>
+          </div>
+          <div class="glass" style="padding:1.25rem;">
+            <label style="font-weight:600;">Divisor 3</label>
+            <input type="file" id="div3-file" class="form-control" accept="image/*" style="margin:0.5rem 0;">
+            <input type="text" id="div3-title" class="form-control" placeholder="Título" style="margin-bottom:0.5rem;">
+            <input type="text" id="div3-text" class="form-control" placeholder="Texto curto" style="margin-bottom:0.5rem;">
+            <img id="div3-preview" style="width:100%;height:100px;object-fit:cover;border-radius:8px;display:none;">
+            <button type="button" class="btn btn-outline btn-sm mt-1" id="div3-remove" style="display:none;">Excluir</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>Contato</h3>
+        <form id="settings-form">
+          <div class="form-group">
+            <label>Telefone (DDD + números)</label>
+            <input type="text" id="phone" class="form-control" placeholder="48992220593">
+          </div>
+          <div class="form-group">
+            <label>WhatsApp (código do país)</label>
+            <input type="text" id="whatsapp" class="form-control" placeholder="5548992220593">
+          </div>
+          <div class="form-group">
+            <label>Instagram (sem @)</label>
+            <input type="text" id="instagram" class="form-control" placeholder="magiaglass_">
+          </div>
+          <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" id="email" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Endereço / Região</label>
+            <textarea id="address" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Horário</label>
+            <input type="text" id="hours" class="form-control">
+          </div>
+          <button type="submit" class="btn btn-primary">Salvar Configurações</button>
+        </form>
+      </div>
+    </main>
+  </div>
+  <script src="../assets/js/data.js"></script>
+  <script src="../assets/js/main.js"></script>
+  <script>
+    if (!isAuthenticated()) location.href = 'index.html';
+    const s = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+    document.getElementById('phone').value = s.phone || '';
+    document.getElementById('whatsapp').value = s.whatsapp || '';
+    document.getElementById('instagram').value = s.instagram || '';
+    document.getElementById('email').value = s.email || '';
+    document.getElementById('address').value = s.address || '';
+    document.getElementById('hours').value = s.hours || '';
+    document.getElementById('div1-title').value = s.divider1Title || '';
+    document.getElementById('div2-title').value = s.divider2Title || '';
+    document.getElementById('div3-title').value = s.divider3Title || '';
+    document.getElementById('div1-text').value = s.divider1Text || '';
+    document.getElementById('div2-text').value = s.divider2Text || '';
+    document.getElementById('div3-text').value = s.divider3Text || '';
+    document.getElementById('gradient-opacity').value = s.gradientOpacity != null ? s.gradientOpacity : 72;
+    document.getElementById('grad-val').textContent = (s.gradientOpacity != null ? s.gradientOpacity : 72) + '%';
+
+    let logoData = s.logo || '';
+    let heroImages = [];
+    if (s.heroImages && s.heroImages.length) heroImages = s.heroImages.slice();
+    else if (s.heroImage) heroImages = [s.heroImage];
+    let div1Data = s.divider1 || '';
+    let div2Data = s.divider2 || '';
+    let div3Data = s.divider3 || '';
+
+    function showLogo() {
+      const wrap = document.getElementById('logo-preview-wrap');
+      const img = document.getElementById('logo-preview');
+      if (logoData) { img.src = logoData; wrap.style.display = 'block'; }
+      else { wrap.style.display = 'none'; img.removeAttribute('src'); }
+    }
+    function renderHeroThumbs() {
+      const box = document.getElementById('hero-thumbs');
+      if (!heroImages.length) {
+        box.innerHTML = '<p style="color:var(--gray-500);font-size:0.9rem;">Nenhuma imagem do topo. Será usada a imagem padrão.</p>';
+        return;
+      }
+      box.innerHTML = heroImages.map((src, i) => `
+        <div class="hero-thumb">
+          <img src="${src}" alt="Hero ${i+1}">
+          <button type="button" title="Excluir" onclick="removeHero(${i})">×</button>
+        </div>
+      `).join('');
+    }
+    window.removeHero = function(i) {
+      heroImages.splice(i, 1);
+      renderHeroThumbs();
+    };
+    function showDiv(n, data) {
+      const img = document.getElementById('div' + n + '-preview');
+      const rem = document.getElementById('div' + n + '-remove');
+      if (data) { img.src = data; img.style.display = 'block'; rem.style.display = 'inline-flex'; }
+      else { img.style.display = 'none'; rem.style.display = 'none'; img.removeAttribute('src'); }
+    }
+    showLogo(); renderHeroThumbs(); showDiv(1, div1Data); showDiv(2, div2Data); showDiv(3, div3Data);
+
+    document.getElementById('gradient-opacity').addEventListener('input', e => {
+      document.getElementById('grad-val').textContent = e.target.value + '%';
+    });
+
+    function fileToData(inputId, cb) {
+      document.getElementById(inputId).addEventListener('change', e => {
+        const f = e.target.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = ev => cb(ev.target.result);
+        r.readAsDataURL(f);
+      });
+    }
+    fileToData('logo-file', d => { logoData = d; showLogo(); });
+    document.getElementById('hero-files').addEventListener('change', e => {
+      const files = Array.from(e.target.files || []);
+      files.forEach(f => {
+        if (f.size > 2.8 * 1024 * 1024) {
+          alert('Arquivo grande demais (máx ~2,8 MB): ' + f.name);
+          return;
+        }
+        const r = new FileReader();
+        r.onload = ev => { heroImages.push(ev.target.result); renderHeroThumbs(); };
+        r.readAsDataURL(f);
+      });
+      e.target.value = '';
+    });
+    fileToData('div1-file', d => { div1Data = d; showDiv(1, div1Data); });
+    fileToData('div2-file', d => { div2Data = d; showDiv(2, div2Data); });
+    fileToData('div3-file', d => { div3Data = d; showDiv(3, div3Data); });
+
+    document.getElementById('logo-remove').onclick = () => { logoData = ''; document.getElementById('logo-file').value = ''; showLogo(); };
+    document.getElementById('div1-remove').onclick = () => { div1Data = ''; document.getElementById('div1-file').value = ''; showDiv(1, ''); };
+    document.getElementById('div2-remove').onclick = () => { div2Data = ''; document.getElementById('div2-file').value = ''; showDiv(2, ''); };
+    document.getElementById('div3-remove').onclick = () => { div3Data = ''; document.getElementById('div3-file').value = ''; showDiv(3, ''); };
+
+    document.getElementById('settings-form').addEventListener('submit', e => {
+      e.preventDefault();
+      setData(STORAGE_KEYS.settings, {
+        phone: document.getElementById('phone').value,
+        whatsapp: document.getElementById('whatsapp').value,
+        instagram: document.getElementById('instagram').value,
+        email: document.getElementById('email').value,
+        address: document.getElementById('address').value,
+        hours: document.getElementById('hours').value,
+        logo: logoData,
+        heroImage: heroImages[0] || '',
+        heroImages: heroImages,
+        gradientOpacity: parseInt(document.getElementById('gradient-opacity').value, 10) || 72,
+        divider1: div1Data,
+        divider2: div2Data,
+        divider3: div3Data,
+        divider1Title: document.getElementById('div1-title').value,
+        divider2Title: document.getElementById('div2-title').value,
+        divider3Title: document.getElementById('div3-title').value,
+        divider1Text: document.getElementById('div1-text').value,
+        divider2Text: document.getElementById('div2-text').value,
+        divider3Text: document.getElementById('div3-text').value
+      });
+      alert('Configurações salvas!');
+      if (typeof applySiteLogo === 'function') applySiteLogo();
+    });
+  </script>
+</body>
+</html>
