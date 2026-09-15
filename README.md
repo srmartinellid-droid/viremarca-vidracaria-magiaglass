@@ -1,26 +1,32 @@
-# Magia Glass — Site-Cliente VireMarca
+# Magia Glass | Site-cliente VireMarca
 
 > **Modelo:** Core → Template Serviços → **Site-cliente Magia Glass**  
-> Repositório: `danielTSIseg/viremarca-Vidracaria-1`  
-> Nicho: Vidraçaria / Serviços premium — Florianópolis (Norte da Ilha)
+> **Nicho:** Vidraçaria / Serviços premium, Florianópolis (Norte da Ilha)
 
-## Stack (padrão produção VireMarca — igual corretor-2)
+## Princípio de implementação
+
+A camada visual existente é a fonte de verdade do produto. A migração para produção adiciona runtime, autenticação e persistência **sem redesenhar o site aprovado**.
+
+## Stack
 
 | Camada | Tecnologia |
-|--------|------------|
-| Framework | **Next.js 15** (App Router) + TypeScript |
-| Persistência | **Turso / libSQL** (`viremarca-vidracaria-1-tsiseguranca`) |
+|---|---|
+| Framework | **Next.js 15** + TypeScript |
+| Persistência | **Turso / libSQL** |
 | Auth admin | Cookie httpOnly assinado (HMAC) + bcrypt |
-| Deploy | Vercel (1 projeto / 1 repo / 1 banco) |
+| Deploy | Vercel |
 
 ## Variáveis de ambiente
 
 ```bash
-TURSO_DATABASE_URL=libsql://viremarca-vidracaria-1-tsiseguranca.aws-us-east-1.turso.io
+TURSO_DATABASE_URL=libsql://seu-banco.turso.io
 TURSO_AUTH_TOKEN=
 ADMIN_SECRET=
+ADMIN_INITIAL_PASSWORD=
 NEXT_PUBLIC_SITE_URL=https://seu-dominio.vercel.app
 ```
+
+`TURSO_AUTH_TOKEN`, `ADMIN_SECRET` e `ADMIN_INITIAL_PASSWORD` são segredos e devem existir somente nas variáveis de ambiente da Vercel ou no ambiente local seguro.
 
 ## Desenvolvimento
 
@@ -29,21 +35,21 @@ npm install
 npm run dev
 ```
 
-- Site: http://localhost:3000  
-- Admin: http://localhost:3000/admin/login  
-- Senha demo: `magia2024` (trocar em produção)
+- Site: `http://localhost:3000`
+- Admin: `http://localhost:3000/admin`
 
-## Estado da migração
+## Produção
 
-Migração do HTML estático → Next.js + Turso **em andamento**.  
-Scaffold e APIs já em `main`. Código completo local: `magia-next-build` / tarball do projeto.
+O build copia a camada HTML/CSS/JS e os assets aprovados para `public/` antes do `next build`. Assim, o visual existente continua sendo servido pela aplicação Next.js enquanto as APIs usam Turso.
+
+O primeiro login cria o usuário administrativo a partir de `ADMIN_INITIAL_PASSWORD`. Depois disso, a senha deve ser alterada pelo próprio painel administrativo.
 
 ## Governança
 
 - `main` = fonte de verdade
-- Token Turso **nunca** no frontend nem no Git
+- Token Turso nunca no frontend nem no Git
 - 1 repo / 1 Vercel / 1 banco
-- Rodapé: `© 2026 Magia Glass · Todos os direitos reservados. · Desenvolvido por VireMarca`
+- Rodapé padrão: `© 2026 Magia Glass · Todos os direitos reservados. · Desenvolvido por VireMarca`
 
 ---
 
