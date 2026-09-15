@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createHash } from 'node:crypto';
 import { db, ensureSchema } from '@/lib/db';
 import { DEFAULT_HOME, DEFAULT_SERVICES, DEFAULT_GALLERY, DEFAULT_SETTINGS } from '@/lib/default-data';
 import { isAdmin } from '@/lib/auth';
@@ -9,8 +10,14 @@ export const dynamic = 'force-dynamic';
 const defaults: Record<string, unknown> = { home: DEFAULT_HOME, services: DEFAULT_SERVICES, gallery: DEFAULT_GALLERY, settings: DEFAULT_SETTINGS };
 const allowed = new Set(Object.keys(defaults));
 const MAX_CONTENT_BYTES = 3_200_000;
+const CACHE_CONTROL = 'private, no-cache, stale-while-revalidate=60, stale-if-error=86400';
 
-export async function GET() {
+function makeEtag(content: Record<string, unknown>) {
+  const canonical = Object.keys(content).sort().map(key => `${key}:${JSON.stringify(content[key])}`).join('|');
+  return `"${createHash('sha256').update(canonical).digest('hex')}"`;
+}
+
+export async function GET(req: Request) {
   try {
     await ensureSchema();
     const result = await db.execute('SELECT key,value FROM site_content');
@@ -18,7 +25,17 @@ export async function GET() {
     for (const row of result.rows) {
       try { out[String(row.key)] = JSON.parse(String(row.value)); } catch { /* keep default */ }
     }
-    return NextResponse.json(out, { headers: { 'Cache-Control': 'no-store' } });
+
+    const etag = makeEtag(out);
+    const headers = {
+      'Cache-Control': CACHE_CONTROL,
+      'ETag': etag,
+      'Vary': 'Cookie',
+    };
+    if (req.headers.get('if-none-match') === etag) {
+      return new NextResponse(null, { status: 304, headers });
+    }
+    return NextResponse.json({ ...out, _meta: { etag } }, { headers });
   } catch {
     return NextResponse.json({ error: 'Não foi possível carregar os dados.' }, { status: 500 });
   }
