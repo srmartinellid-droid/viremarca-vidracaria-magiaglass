@@ -3,5 +3,11 @@
   "framework": null,
   "buildCommand": "",
   "outputDirectory": ".",
-  "installCommand": ""
+  "installCommand": "",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/", "destination": "/admin/index.html" }
+  ]
 }
