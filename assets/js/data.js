@@ -124,7 +124,6 @@ if(typeof window!=='undefined'){
     if(typeof renderGalleryIfNeeded==='function')renderGalleryIfNeeded();
     if(typeof initWhatsApp==='function')initWhatsApp();
     if(typeof applySiteLogo==='function')applySiteLogo();
-    if(typeof initHeroCarousel==='function')initHeroCarousel();
     if(isPublicSite())markSiteReady();
   });
 }
