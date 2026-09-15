@@ -4,6 +4,12 @@
   if (window.location.pathname.includes('/admin/')) return;
 
   const pageCache = new Map();
+  const ROUTES = {
+    '/': '/index.html',
+    '/pages/servicos': '/pages/servicos.html',
+    '/pages/galeria': '/pages/galeria.html',
+    '/pages/contato': '/pages/contato.html'
+  };
   let navigating = false;
   let renderedUrl = canonical(window.location.href);
 
@@ -13,6 +19,7 @@
     if (path === '/index.html' || path === '/index') return '/';
     if (path.endsWith('/index.html')) return path.slice(0, -11) || '/';
     if (path.endsWith('.html')) path = path.slice(0, -5) || '/';
+    if (path !== '/' && path.endsWith('/')) path = path.slice(0, -1);
     return path || '/';
   }
 
@@ -20,6 +27,24 @@
     const u = new URL(url, window.location.href);
     u.pathname = normalizePathname(u.pathname);
     return u.origin + u.pathname + u.search + u.hash;
+  }
+
+  function routeSource(url) {
+    const u = new URL(canonical(url), window.location.href);
+    const source = ROUTES[u.pathname];
+    if (!source) return u.pathname;
+    return source + u.search + u.hash;
+  }
+
+  function resolvePublicLink(value, baseUrl) {
+    if (!value || value.startsWith('#') || value.startsWith('data:') || value.startsWith('mailto:') || value.startsWith('tel:') || value.startsWith('javascript:')) return value;
+    try {
+      const resolved = new URL(value, baseUrl);
+      if (resolved.origin !== window.location.origin || resolved.pathname.includes('/admin/')) return resolved.href;
+      return canonical(resolved.href);
+    } catch (_) {
+      return value;
+    }
   }
 
   function isInternalPageLink(anchor, event) {
@@ -52,7 +77,7 @@
       const resolved = new URL(raw, baseUrl);
       if (resolved.origin !== window.location.origin) return;
       if (resolved.pathname.includes('/admin/')) return;
-      anchor.setAttribute('href', canonical(resolved.href));
+      anchor.setAttribute('href', resolvePublicLink(raw, baseUrl));
     });
 
     root.querySelectorAll('[src]').forEach(function (element) {
@@ -69,7 +94,8 @@
   async function fetchPage(url) {
     const key = canonical(url);
     if (pageCache.has(key)) return pageCache.get(key);
-    const fetchUrl = key;
+
+    const fetchUrl = new URL(routeSource(key), window.location.origin).href;
     const response = await fetch(fetchUrl, {
       method: 'GET',
       credentials: 'same-origin',
@@ -77,10 +103,11 @@
       headers: { Accept: 'text/html', 'X-MG-Soft-Navigation': '1' }
     });
     if (!response.ok) throw new Error('navigation fetch failed: ' + response.status);
+
     const html = await response.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     if (!doc.body || !doc.querySelector('.header')) throw new Error('invalid Magia Glass page');
-    pageCache.set(key, { html: html, baseUrl: response.url || fetchUrl });
+    pageCache.set(key, { html: html, baseUrl: fetchUrl });
     return pageCache.get(key);
   }
 
@@ -125,7 +152,7 @@
 
   function swapPage(payload, url, push) {
     const html = payload.html;
-    const baseUrl = payload.baseUrl || canonical(url);
+    const baseUrl = payload.baseUrl || new URL(routeSource(url), window.location.origin).href;
     const nextDoc = new DOMParser().parseFromString(html, 'text/html');
     const currentHeader = document.querySelector('.header');
     if (!currentHeader || !nextDoc.body) throw new Error('navigation shell unavailable');
@@ -183,6 +210,10 @@
   }
 
   function init() {
+    const initialCanonical = canonical(window.location.href);
+    if (initialCanonical !== window.location.href) history.replaceState({ mgSoftNavigation: true }, '', initialCanonical);
+    renderedUrl = initialCanonical;
+
     document.addEventListener('click', function (event) {
       const anchor = event.target.closest('a');
       if (!isInternalPageLink(anchor, event)) return;
