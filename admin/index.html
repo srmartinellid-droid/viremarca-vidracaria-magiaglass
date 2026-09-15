@@ -57,7 +57,7 @@
           if (login(pass)) {
             window.location.replace('dashboard.html');
           } else {
-            showError('Senha incorreta.');
+            showError(window.__MG_LOGIN_ERROR || 'Não foi possível autenticar.');
           }
         } catch (err) {
           console.error(err);
