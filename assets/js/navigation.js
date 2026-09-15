@@ -7,10 +7,18 @@
   let navigating = false;
   let renderedUrl = canonical(window.location.href);
 
+  function normalizePathname(pathname) {
+    let path = pathname || '/';
+    path = path.replace(/\/pages\/(?:pages\/)+/g, '/pages/');
+    if (path === '/index.html' || path === '/index') return '/';
+    if (path.endsWith('/index.html')) return path.slice(0, -11) || '/';
+    if (path.endsWith('.html')) path = path.slice(0, -5) || '/';
+    return path || '/';
+  }
+
   function canonical(url) {
     const u = new URL(url, window.location.href);
-    if (u.pathname.endsWith('/index.html')) u.pathname = u.pathname.slice(0, -10) || '/';
-    else if (u.pathname.endsWith('.html')) u.pathname = u.pathname.slice(0, -5) || '/';
+    u.pathname = normalizePathname(u.pathname);
     return u.origin + u.pathname + u.search + u.hash;
   }
 
@@ -26,10 +34,43 @@
     return true;
   }
 
+  function normalizeRelativeUrl(value, baseUrl) {
+    if (!value || value.startsWith('#') || value.startsWith('data:') || value.startsWith('mailto:') || value.startsWith('tel:') || value.startsWith('javascript:')) return value;
+    try {
+      const resolved = new URL(value, baseUrl);
+      if (resolved.origin !== window.location.origin) return resolved.href;
+      return resolved.href;
+    } catch (_) {
+      return value;
+    }
+  }
+
+  function normalizeImportedUrls(root, baseUrl) {
+    root.querySelectorAll('a[href]').forEach(function (anchor) {
+      const raw = anchor.getAttribute('href');
+      if (!raw || raw.startsWith('#')) return;
+      const resolved = new URL(raw, baseUrl);
+      if (resolved.origin !== window.location.origin) return;
+      if (resolved.pathname.includes('/admin/')) return;
+      anchor.setAttribute('href', canonical(resolved.href));
+    });
+
+    root.querySelectorAll('[src]').forEach(function (element) {
+      const raw = element.getAttribute('src');
+      if (raw) element.setAttribute('src', normalizeRelativeUrl(raw, baseUrl));
+    });
+
+    root.querySelectorAll('[poster]').forEach(function (element) {
+      const raw = element.getAttribute('poster');
+      if (raw) element.setAttribute('poster', normalizeRelativeUrl(raw, baseUrl));
+    });
+  }
+
   async function fetchPage(url) {
     const key = canonical(url);
     if (pageCache.has(key)) return pageCache.get(key);
-    const response = await fetch(url, {
+    const fetchUrl = key;
+    const response = await fetch(fetchUrl, {
       method: 'GET',
       credentials: 'same-origin',
       cache: 'default',
@@ -39,8 +80,8 @@
     const html = await response.text();
     const doc = new DOMParser().parseFromString(html, 'text/html');
     if (!doc.body || !doc.querySelector('.header')) throw new Error('invalid Magia Glass page');
-    pageCache.set(key, html);
-    return html;
+    pageCache.set(key, { html: html, baseUrl: response.url || fetchUrl });
+    return pageCache.get(key);
   }
 
   function updateHead(nextDoc) {
@@ -82,17 +123,26 @@
     if (typeof markSiteReady === 'function') markSiteReady();
   }
 
-  function swapPage(html, url, push) {
+  function swapPage(payload, url, push) {
+    const html = payload.html;
+    const baseUrl = payload.baseUrl || canonical(url);
     const nextDoc = new DOMParser().parseFromString(html, 'text/html');
     const currentHeader = document.querySelector('.header');
     if (!currentHeader || !nextDoc.body) throw new Error('navigation shell unavailable');
+
+    normalizeImportedUrls(currentHeader, renderedUrl);
 
     const nextChildren = Array.from(nextDoc.body.children)
       .filter(node => !node.matches('.header') && node.tagName !== 'SCRIPT')
       .map(node => document.importNode(node, true));
 
+    const tempRoot = document.createElement('div');
+    tempRoot.append(...nextChildren);
+    normalizeImportedUrls(tempRoot, baseUrl);
+    const normalizedChildren = Array.from(tempRoot.childNodes);
+
     const replace = function () {
-      document.body.replaceChildren(currentHeader, ...nextChildren);
+      document.body.replaceChildren(currentHeader, ...normalizedChildren);
       updateHead(nextDoc);
       if (push) history.pushState({ mgSoftNavigation: true }, '', canonical(url));
       renderedUrl = canonical(url);
@@ -110,15 +160,15 @@
 
   async function navigate(url, push) {
     if (navigating) return;
-    const target = new URL(url, window.location.href);
+    const target = new URL(canonical(url), window.location.href);
     const targetCanonical = canonical(target);
     if (targetCanonical === renderedUrl && push) return;
     navigating = true;
     try {
-      const html = await fetchPage(target.href);
-      swapPage(html, target.href, push);
+      const payload = await fetchPage(targetCanonical);
+      swapPage(payload, targetCanonical, push);
     } catch (error) {
-      window.location.href = target.href;
+      window.location.href = targetCanonical;
     } finally {
       navigating = false;
     }
