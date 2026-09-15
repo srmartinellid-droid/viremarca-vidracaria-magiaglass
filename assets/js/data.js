@@ -8,8 +8,8 @@ const STORAGE_KEYS = { services:'mg_services', gallery:'mg_gallery', settings:'m
 const CONTENT_KEY_MAP = { mg_services:'services', mg_gallery:'gallery', mg_settings:'settings', mg_home:'home' };
 const CONTENT_CACHE_KEY = 'mg_content_cache_v3';
 const CONTENT_CACHE_VERSION = 3;
-/* Keep the synchronous localStorage cache below the browser's ~5 MiB localStorage ceiling.
-   The API rejects individual writes above 3 MB, so 4.4 MB leaves headroom for the cache envelope. */
+const CONTENT_CACHE_NAME = 'mg-content-v1';
+const CONTENT_CACHE_URL = '/api/content';
 const CONTENT_CACHE_MAX_BYTES = 4400000;
 function contentKey(key){ return CONTENT_KEY_MAP[key] || key; }
 
@@ -33,11 +33,16 @@ let _contentEtag = '';
 
 function xhr(method,url,body,headers){const x=new XMLHttpRequest();x.open(method,url,false);x.withCredentials=true;x.setRequestHeader('Content-Type','application/json');if(headers)Object.keys(headers).forEach(k=>x.setRequestHeader(k,headers[k]));if(method==='GET'){x.setRequestHeader('Cache-Control','no-cache');x.setRequestHeader('Pragma','no-cache');}try{x.send(body===undefined?null:JSON.stringify(body));}catch(e){return null;}return x;}
 function getData(key,defaultValue){const k=contentKey(key);return Object.prototype.hasOwnProperty.call(_serverData,k)?_serverData[k]:defaultValue;}
+function setCacheStatus(source,status,details){if(typeof window==='undefined')return;window.__MG_CACHE_STATUS=window.__MG_CACHE_STATUS||{};window.__MG_CACHE_STATUS[source]={status,...(details||{}),at:Date.now()};}
 function cacheAvailable(){try{return typeof localStorage!=='undefined';}catch(e){return false;}}
+function cacheStorageAvailable(){try{return typeof caches!=='undefined' && typeof caches.open==='function';}catch(e){return false;}}
 function readContentCache(){if(!cacheAvailable())return null;try{const raw=localStorage.getItem(CONTENT_CACHE_KEY);if(!raw)return null;const cache=JSON.parse(raw);if(!cache||typeof cache!=='object'||cache.version!==CONTENT_CACHE_VERSION||!cache.data||typeof cache.data!=='object')return null;return cache;}catch(e){return null;}}
-function writeContentCache(data,etag){if(!cacheAvailable())return false;try{const payload=JSON.stringify({version:CONTENT_CACHE_VERSION,etag:etag||'',savedAt:Date.now(),data});const bytes=new TextEncoder().encode(payload).byteLength;if(bytes>CONTENT_CACHE_MAX_BYTES)return false;localStorage.setItem(CONTENT_CACHE_KEY,payload);return true;}catch(e){return false;}}
+function writeContentCache(data,etag){if(!cacheAvailable())return false;try{const payload=JSON.stringify({version:CONTENT_CACHE_VERSION,etag:etag||'',savedAt:Date.now(),data});const bytes=new TextEncoder().encode(payload).byteLength;if(bytes>CONTENT_CACHE_MAX_BYTES){setCacheStatus('localStorage','too-large',{bytes,max:CONTENT_CACHE_MAX_BYTES});return false;}localStorage.setItem(CONTENT_CACHE_KEY,payload);setCacheStatus('localStorage','saved',{bytes});return true;}catch(e){setCacheStatus('localStorage','failed',{error:String(e&&e.name||e)});return false;}}
+async function readCacheStorage(){if(!cacheStorageAvailable())return null;try{const cache=await caches.open(CONTENT_CACHE_NAME);const response=await cache.match(CONTENT_CACHE_URL,{ignoreSearch:true});if(!response)return null;const payload=await response.json();if(!payload||typeof payload!=='object'||!payload.data||typeof payload.data!=='object')return null;setCacheStatus('cacheStorage','hit',{bytes:JSON.stringify(payload).length});return payload;}catch(e){setCacheStatus('cacheStorage','read-failed',{error:String(e&&e.name||e)});return null;}}
+function writeCacheStorage(data,etag){if(!cacheStorageAvailable())return;try{const payload=JSON.stringify({version:CONTENT_CACHE_VERSION,etag:etag||'',savedAt:Date.now(),data});const response=new Response(payload,{status:200,headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-MG-Cache-Version':String(CONTENT_CACHE_VERSION)}});caches.open(CONTENT_CACHE_NAME).then(cache=>cache.put(CONTENT_CACHE_URL,response)).then(()=>setCacheStatus('cacheStorage','saved',{bytes:new TextEncoder().encode(payload).byteLength})).catch(e=>setCacheStatus('cacheStorage','failed',{error:String(e&&e.name||e)}));}catch(e){setCacheStatus('cacheStorage','failed',{error:String(e&&e.name||e)});}}
+function applyCachedContent(cache,source){if(!cache||!cache.data||typeof cache.data!=='object')return false;_serverData=cache.data;_contentEtag=cache.etag||'';if(typeof window!=='undefined'){window.__MG_DATA_FROM_CACHE=source;window.__MG_DATA_READY=true;}publishDataUpdate();return true;}
 function publishDataUpdate(){if(typeof window==='undefined')return;window.dispatchEvent(new CustomEvent('mg:data-updated'));}
-function applyFreshContent(payload,etag){const data={...payload};delete data._meta;delete data.error;_serverData=data;_contentEtag=etag||'';writeContentCache(data,_contentEtag);if(typeof window!=='undefined'){window.__MG_DATA_READY=true;if(document.documentElement.classList.contains('mg-awaiting-data'))document.documentElement.classList.remove('mg-awaiting-data');}publishDataUpdate();}
+function applyFreshContent(payload,etag){const data={...payload};delete data._meta;delete data.error;_serverData=data;_contentEtag=etag||'';writeContentCache(data,_contentEtag);writeCacheStorage(data,_contentEtag);if(typeof window!=='undefined'){window.__MG_DATA_READY=true;if(document.documentElement.classList.contains('mg-awaiting-data'))document.documentElement.classList.remove('mg-awaiting-data');}publishDataUpdate();}
 function refreshDataInBackground(){
   const headers={Accept:'application/json'};
   if(_contentEtag)headers['If-None-Match']=_contentEtag;
@@ -56,7 +61,7 @@ function setData(key,value){
   let requestBody;
   try{requestBody={key:k,value};const bytes=new TextEncoder().encode(JSON.stringify(requestBody)).byteLength;if(bytes>3000000){alert('Os dados são grandes demais para salvar. Reduza a quantidade ou o tamanho das imagens.');return false;}}catch(e){alert('Não foi possível preparar os dados para salvar.');return false;}
   const x=xhr('POST','/api/content',requestBody);
-  if(x&&x.status>=200&&x.status<300){_serverData[k]=value;_contentEtag='';writeContentCache(_serverData,'');if(k==='settings'){applyAdminBranding();}return true;}
+  if(x&&x.status>=200&&x.status<300){_serverData[k]=value;_contentEtag='';writeContentCache(_serverData,'');writeCacheStorage(_serverData,'');if(k==='settings'){applyAdminBranding();}return true;}
   let message='Não foi possível salvar os dados.';
   if(!x)message='Não foi possível conectar ao servidor.';else if(x.status===401)message='Sua sessão administrativa expirou. Faça login novamente.';else if(x.status===413)message='Os dados são grandes demais para serem salvos. Reduza a quantidade/tamanho das imagens.';else{try{const payload=JSON.parse(x.responseText||'{}');if(payload.error)message=payload.error;}catch(e){}}
   alert(message);return false;
@@ -64,8 +69,15 @@ function setData(key,value){
 function initData(){
   const cached=readContentCache();
   const publicSite=isPublicSite();
-  if(publicSite&&cached){_serverData=cached.data;_contentEtag=cached.etag||'';window.__MG_DATA_FROM_CACHE=true;window.__MG_DATA_READY=true;}
-  else if(publicSite){window.__MG_DATA_FROM_CACHE=false;window.__MG_DATA_READY=false;document.documentElement.classList.add('mg-awaiting-data');}
+  if(publicSite&&cached)applyCachedContent(cached,'localStorage');
+  else if(publicSite){
+    window.__MG_DATA_FROM_CACHE=false;
+    window.__MG_DATA_READY=false;
+    document.documentElement.classList.add('mg-awaiting-data');
+    readCacheStorage().then(cache=>{
+      if(cache&&!window.__MG_DATA_READY)applyCachedContent(cache,'cacheStorage');
+    }).catch(()=>{});
+  }
   if(!publicSite){const x=xhr('GET','/api/content?_=' + Date.now());if(x&&x.status===200){try{const payload=JSON.parse(x.responseText);applyFreshContent(payload,payload?._meta?.etag||x.getResponseHeader('ETag')||'');}catch(e){}}return _serverData;}
   refreshDataInBackground();
   return _serverData;
@@ -73,7 +85,8 @@ function initData(){
 function isAuthenticated(){const x=xhr('GET','/api/auth/me');try{return !!(x&&x.status===200&&JSON.parse(x.responseText).authenticated);}catch(e){return false;}}
 function login(password){const x=xhr('POST','/api/auth/login',{password});if(x&&x.status>=200&&x.status<300){window.__MG_LOGIN_ERROR='';return true;}try{const payload=x?JSON.parse(x.responseText):null;window.__MG_LOGIN_ERROR=payload&&payload.error?payload.error:'Não foi possível autenticar.';}catch(e){window.__MG_LOGIN_ERROR='Não foi possível conectar ao servidor.';}return false;}
 function logout(){xhr('POST','/api/auth/logout');}
-function changePassword(oldPass,newPass){const x=xhr('POST','/api/auth/password',{oldPassword:oldPass,newPassword:newPass});return !!(x&&x.status>=200&&x.status<300);}
+function changePasswordDetailed(oldPass,newPass){const x=xhr('POST','/api/auth/password',{oldPassword:oldPass,newPassword:newPass});let payload=null;try{payload=x?JSON.parse(x.responseText||'{}'):null;}catch(e){}return {ok:!!(x&&x.status>=200&&x.status<300),status:x?x.status:0,error:payload&&payload.error?payload.error:''};}
+function changePassword(oldPass,newPass){return changePasswordDetailed(oldPass,newPass).ok;}
 
 function injectRuntimeUIRules(){
   if(typeof document==='undefined' || document.getElementById('mg-runtime-ui-rules')) return;
