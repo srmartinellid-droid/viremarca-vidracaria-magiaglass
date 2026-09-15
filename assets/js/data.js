@@ -40,4 +40,25 @@ function isAuthenticated(){const x=xhr('GET','/api/auth/me');try{return !!(x&&x.
 function login(password){const x=xhr('POST','/api/auth/login',{password});if(x&&x.status>=200&&x.status<300){window.__MG_LOGIN_ERROR='';return true;}try{const payload=x?JSON.parse(x.responseText):null;window.__MG_LOGIN_ERROR=payload&&payload.error?payload.error:'Não foi possível autenticar.';}catch(e){window.__MG_LOGIN_ERROR='Não foi possível conectar ao servidor.';}return false;}
 function logout(){xhr('POST','/api/auth/logout');}
 function changePassword(oldPass,newPass){const x=xhr('POST','/api/auth/password',{oldPassword:oldPass,newPassword:newPass});return !!(x&&x.status>=200&&x.status<300);}
-if(typeof window!=='undefined'){const fontLink=document.createElement('link');fontLink.rel='stylesheet';fontLink.href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap';document.head.appendChild(fontLink);initData();}
+function normalizeAdminLogo(){
+  if(typeof document==='undefined') return;
+  document.querySelectorAll('.admin-sidebar .logo img').forEach(img=>{
+    img.style.height='40px';
+    img.style.width='auto';
+    img.style.maxWidth='100%';
+    img.style.objectFit='contain';
+    img.style.flexShrink='0';
+  });
+  document.querySelectorAll('.admin-sidebar .logo [data-site-logo]').forEach(el=>{
+    if(el.dataset.adminBrandFixed==='1') return;
+    el.dataset.adminBrandFixed='1';
+    el.style.filter='none';
+    el.innerHTML='<img src="../assets/images/logo-insta.jpeg" alt="" style="height:40px;width:auto;max-width:100%;object-fit:contain;border-radius:8px;flex-shrink:0;">';
+  });
+}
+if(typeof window!=='undefined'){
+  const fontLink=document.createElement('link');fontLink.rel='stylesheet';fontLink.href='https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap';document.head.appendChild(fontLink);
+  initData();
+  normalizeAdminLogo();
+  if(document.body){new MutationObserver(normalizeAdminLogo).observe(document.body,{childList:true,subtree:true});}
+}
