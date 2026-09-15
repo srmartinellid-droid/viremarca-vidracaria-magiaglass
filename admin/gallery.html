@@ -45,21 +45,21 @@
           <div class="form-group">
             <label>Imagens (múltiplas – selecione várias de uma vez)</label>
             <input type="file" id="g-images" class="form-control" accept="image/*" multiple>
-            <p style="font-size:0.8rem;color:var(--gray-600);margin-top:0.35rem;">Álbum: selecione várias fotos de uma obra. Cada publicação é um registro profissional com título e descrição breve.</p>
+            <p style="font-size:0.8rem;color:var(--gray-600);margin-top:0.35rem;">As imagens são otimizadas automaticamente para manter o painel rápido e a publicação leve.</p>
             <div id="g-previews" style="display:flex;flex-wrap:wrap;gap:0.75rem;margin-top:0.75rem;"></div>
           </div>
           <div class="form-group">
             <label><input type="checkbox" id="g-featured"> Destaque</label>
           </div>
           <div style="display:flex;gap:0.75rem;">
-            <button type="submit" class="btn btn-primary">Salvar</button>
+            <button type="submit" class="btn btn-primary" id="gallery-save-btn">Salvar</button>
             <button type="button" class="btn btn-secondary" onclick="hideForm()">Cancelar</button>
           </div>
         </form>
       </div>
 
       <div class="admin-card">
-        <div class="gallery-grid" id="gallery-list" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr));"></div>
+        <div class="gallery-grid" id="gallery-list" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr);"></div>
       </div>
     </main>
   </div>
@@ -67,20 +67,65 @@
   <script>
     if (!isAuthenticated()) location.href = 'index.html';
     let currentImages = [];
+    const MAX_TOTAL_CHARS = 3000000;
+    const MAX_IMAGE_DIMENSION = 1400;
+    const IMAGE_QUALITY = 0.72;
 
-    document.getElementById('g-images').addEventListener('change', e => {
+    function optimizeImageSource(source) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+          const width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+          const height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d', { alpha: false });
+          if (!ctx) return reject(new Error('Canvas indisponível'));
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', IMAGE_QUALITY));
+        };
+        img.onerror = () => reject(new Error('Não foi possível ler uma das imagens.'));
+        img.src = source;
+      });
+    }
+
+    async function optimizeSelectedFiles(files) {
+      const optimized = [];
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) continue;
+        const reader = new FileReader();
+        const source = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Não foi possível ler a imagem selecionada.'));
+          reader.readAsDataURL(file);
+        });
+        optimized.push(await optimizeImageSource(source));
+      }
+      return optimized;
+    }
+
+    document.getElementById('g-images').addEventListener('change', async e => {
       const files = Array.from(e.target.files || []);
       if (!files.length) return;
-      let pending = files.length;
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = ev => {
-          currentImages.push(ev.target.result);
-          pending--;
-          if (pending === 0) renderPreviews();
-        };
-        reader.readAsDataURL(file);
-      });
+      const input = e.target;
+      input.disabled = true;
+      try {
+        const optimized = await optimizeSelectedFiles(files);
+        const next = [...currentImages, ...optimized];
+        if (next.reduce((total, src) => total + src.length, 0) > MAX_TOTAL_CHARS) {
+          alert('As imagens selecionadas ultrapassam o limite seguro do álbum. Selecione menos fotos ou imagens menores.');
+          return;
+        }
+        currentImages = next;
+        renderPreviews();
+      } catch (err) {
+        alert(err.message || 'Não foi possível processar as imagens.');
+      } finally {
+        input.disabled = false;
+        input.value = '';
+      }
     });
 
     function renderPreviews() {
@@ -152,33 +197,51 @@
       if (!confirm('Excluir este item?')) return;
       let list = getData(STORAGE_KEYS.gallery, []);
       list = list.filter(i => i.id !== id);
-      setData(STORAGE_KEYS.gallery, list);
+      if (!setData(STORAGE_KEYS.gallery, list)) return;
       load();
     }
 
-    document.getElementById('gallery-form').addEventListener('submit', e => {
+    document.getElementById('gallery-form').addEventListener('submit', async e => {
       e.preventDefault();
       if (!currentImages.length) {
         if (!confirm('Nenhuma imagem adicionada. Salvar mesmo assim?')) return;
       }
-      let list = getData(STORAGE_KEYS.gallery, []);
-      const id = document.getElementById('g-id').value || ('g' + Date.now());
-      const item = {
-        id,
-        title: document.getElementById('g-title').value,
-        description: document.getElementById('g-description').value,
-        category: document.getElementById('g-category').value,
-        date: document.getElementById('g-date').value,
-        featured: document.getElementById('g-featured').checked,
-        images: [...currentImages],
-        image: currentImages[0] || ''
-      };
-      const idx = list.findIndex(i => i.id === id);
-      if (idx >= 0) list[idx] = item; else list.push(item);
-      setData(STORAGE_KEYS.gallery, list);
-      hideForm();
-      load();
-      alert('Item salvo com ' + currentImages.length + ' imagem(ns)!');
+
+      const saveBtn = document.getElementById('gallery-save-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Salvando...';
+      try {
+        let list = getData(STORAGE_KEYS.gallery, []);
+        const id = document.getElementById('g-id').value || ('g' + Date.now());
+        const item = {
+          id,
+          title: document.getElementById('g-title').value.trim(),
+          description: document.getElementById('g-description').value.trim(),
+          category: document.getElementById('g-category').value.trim(),
+          date: document.getElementById('g-date').value,
+          featured: document.getElementById('g-featured').checked,
+          images: [...currentImages],
+          image: currentImages[0] || ''
+        };
+        const idx = list.findIndex(i => i.id === id);
+        if (idx >= 0) list[idx] = item; else list.push(item);
+
+        const totalChars = JSON.stringify({ key: STORAGE_KEYS.gallery, value: list }).length;
+        if (totalChars > MAX_TOTAL_CHARS) {
+          alert('O álbum ficou grande demais para salvar. Remova algumas imagens e tente novamente.');
+          return;
+        }
+
+        if (!setData(STORAGE_KEYS.gallery, list)) return;
+        hideForm();
+        load();
+        alert('Item salvo com ' + currentImages.length + ' imagem(ns)!');
+      } catch (err) {
+        alert(err.message || 'Não foi possível salvar a publicação.');
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Salvar';
+      }
     });
     function bindListActions() {
       document.getElementById('gallery-list').onclick = function(e) {
