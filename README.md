@@ -5,7 +5,7 @@
 
 ## Princípio de implementação
 
-A camada visual existente é a fonte de verdade do produto. A migração para produção adiciona runtime, autenticação e persistência **sem redesenhar o site aprovado**.
+A camada visual existente é a fonte de verdade do produto. A migração para produção adiciona runtime, autenticação, persistência e aceleração de leitura **sem redesenhar o site aprovado**.
 
 ## Stack
 
@@ -15,6 +15,28 @@ A camada visual existente é a fonte de verdade do produto. A migração para pr
 | Persistência | **Turso / libSQL** |
 | Auth admin | Cookie httpOnly assinado (HMAC) + bcrypt |
 | Deploy | Vercel |
+| Cache de conteúdo | Cache local do navegador + SWR + HTTP ETag |
+
+## Persistência e cache
+
+O **Turso/libSQL continua sendo a única fonte de verdade**. O navegador não substitui o banco e não é usado como persistência de conteúdo administrativo.
+
+O conteúdo público usa uma estratégia **stale-while-revalidate**:
+
+1. Se existir uma cópia local válida do conteúdo público, ela é aplicada imediatamente para evitar uma nova tela vazia/carregamento visual a cada visita.
+2. Em paralelo, o navegador consulta `/api/content` em segundo plano.
+3. A API calcula um **ETag SHA-256** do conteúdo atual e aceita `If-None-Match`.
+4. Se nada mudou, responde `304 Not Modified`, sem reenviar o payload.
+5. Se mudou, responde com a nova versão, atualiza o cache local e o DOM sem redesenhar a interface.
+6. Se a rede falhar, a cópia local continua sendo usada quando disponível.
+
+O cache local é limitado a aproximadamente **1,8 MB** para evitar transformar `localStorage` em depósito de imagens/Base64. Se o conteúdo ultrapassar esse limite, ele continua funcionando com a fonte de verdade no servidor, sem forçar armazenamento local.
+
+**Credenciais, sessão administrativa e segredos não são armazenados nesse cache público.** Imagens continuam seguindo a estratégia própria de carregamento do site; o cache de conteúdo serve principalmente para os dados do CMS.
+
+A escolha de cache local para o payload pequeno e estruturado evita bloquear o primeiro paint com uma consulta ao banco. `localStorage` é síncrono, por isso o limite é deliberadamente conservador. Para dados maiores ou binários, a plataforma web oferece IndexedDB, que é assíncrono e apropriado para volumes estruturados maiores. urlMDN: IndexedDBhttps://developer.mozilla.org/pt-BR/docs/Web/API/IndexedDB_API
+
+A validação HTTP usa ETag/If-None-Match, permitindo que o servidor confirme uma versão inalterada com `304` sem retransmitir o corpo completo. urlMDN: ETaghttps://developer.mozilla.org/pt-BR/docs/Web/HTTP/Reference/Headers/ETag
 
 ## Variáveis de ambiente
 
@@ -47,6 +69,8 @@ O primeiro login cria o usuário administrativo a partir de `ADMIN_INITIAL_PASSW
 ## Governança
 
 - `main` = fonte de verdade
+- Turso = fonte de verdade dos dados do CMS
+- Cache local = acelerador, nunca autoridade
 - Token Turso nunca no frontend nem no Git
 - 1 repo / 1 Vercel / 1 banco
 - Rodapé padrão: `© 2026 Magia Glass · Todos os direitos reservados. · Desenvolvido por VireMarca`
