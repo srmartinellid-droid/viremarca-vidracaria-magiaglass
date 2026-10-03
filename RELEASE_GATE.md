@@ -12,12 +12,15 @@ Este contrato vale exclusivamente para `srmartinellid-droid/viremarca-vidracaria
 
 ## Gate antes do merge
 1. `fix/nota-10` contém todas as mudanças.
-2. `tsc --noEmit`, lint e build passam.
+2. `npm ci`, `tsc --noEmit`, lint e build passam.
 3. Testes locais usam banco `file:` e dados fictícios.
 4. Não houve escrita no banco de produção durante testes.
 5. Nenhum segredo aparece no diff.
 6. Visual e fluxos críticos foram testados em 375×812 e 1440×900.
 7. Lighthouse mobile foi executado nas quatro páginas públicas.
+
+## Frente G — validação automatizada
+O workflow `.github/workflows/validate.yml` executa o gate técnico com `npm ci`, TypeScript, ESLint e build. Em seguida inicia o build de produção local e coleta uma baseline Lighthouse mobile das quatro rotas públicas (`/`, `/servicos`, `/galeria`, `/contato`). O relatório é preservado como artifact do workflow. A baseline é informativa nesta etapa, sem transformar score de performance em bloqueio arbitrário.
 
 ## Gate de produção
 1. O squash merge entra em `main`.

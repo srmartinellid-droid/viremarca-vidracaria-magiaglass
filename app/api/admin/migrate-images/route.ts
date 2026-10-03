@@ -166,10 +166,10 @@ async function measureJobs(jobs: Job[]) {
   return { before, after };
 }
 
-async function upsertMedia(key: string, url: string, altText: string) {
+async function upsertMedia(key: string, url: string, purpose: MediaPurpose, altText: string) {
   await db.execute({
-    sql: 'INSERT INTO media(storage_key,url,purpose,alt_text,created_at) VALUES(?,?,?,?,?) ON CONFLICT(storage_key) DO UPDATE SET url=excluded.url,alt_text=excluded.alt_text',
-    args: [key, url, 'gallery', altText.slice(0, 180), new Date().toISOString()],
+    sql: 'INSERT INTO media(storage_key,url,purpose,alt_text,created_at) VALUES(?,?,?,?,?) ON CONFLICT(storage_key) DO UPDATE SET url=excluded.url,purpose=excluded.purpose,alt_text=excluded.alt_text',
+    args: [key, url, purpose, altText.slice(0, 180), new Date().toISOString()],
   });
 }
 
@@ -189,7 +189,7 @@ async function uploadJob(job: Job) {
         allowOverwrite: true,
       })).url;
 
-  await upsertMedia(storageKey, url, job.altText);
+  await upsertMedia(storageKey, url, job.purpose, job.altText);
   return { url, before: bytes.byteLength, after: output.byteLength };
 }
 

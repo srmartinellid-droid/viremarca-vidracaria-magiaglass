@@ -15,7 +15,33 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm install
+      - run: npm ci
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm run build
+      - name: Start production server
+        run: |
+          npm run start > /tmp/magia-glass-next.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:3000/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/magia-glass-next.log
+          exit 1
+      - name: Lighthouse mobile baseline
+        run: |
+          npx -y @lhci/cli@0.15.1 collect \
+            --url=http://127.0.0.1:3000/ \
+            --url=http://127.0.0.1:3000/servicos \
+            --url=http://127.0.0.1:3000/galeria \
+            --url=http://127.0.0.1:3000/contato \
+            --settings.formFactor=mobile \
+            --settings.screenEmulation.mobile=true \
+            --settings.chromeFlags="--headless --no-sandbox --disable-dev-shm-usage"
+      - name: Upload Lighthouse baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-mobile-baseline
+          path: .lighthouseci
+          if-no-files-found: warn
