@@ -258,10 +258,7 @@ export async function POST(request: Request) {
     if (!token || !verifyToken(token, hash)) return jsonError('Faça um novo prepare e baixe o backup antes de migrar.', 409);
     if (body.confirm !== CONFIRMATION) return jsonError(`Confirmação obrigatória: ${CONFIRMATION}`, 400);
 
-    const cursor = Math.max(0, Number(body.cursor || 0));
     const batchSize = Math.min(MAX_BATCH, Math.max(1, Number(body.batchSize || DEFAULT_BATCH)));
-    if (!Number.isInteger(cursor)) return jsonError('Cursor inválido.', 400);
-
     const start = Date.now();
     const timeBudgetMs = 30_000;
     let processed = 0;
@@ -269,19 +266,17 @@ export async function POST(request: Request) {
     let after = 0;
     const nextParsed = new Map(parsed);
     const changedKeys = new Set<string>();
-    let nextCursor = cursor;
-
-    while (nextCursor < jobs.length && processed < batchSize && Date.now() - start < timeBudgetMs) {
-      const job = jobs[nextCursor];
+    while (processed < batchSize && processed < jobs.length && Date.now() - start < timeBudgetMs) {
+      const job = jobs[processed];
       const currentRoot = nextParsed.get(job.key);
       if (!currentRoot) {
-        nextCursor++;
+        processed++;
         continue;
       }
 
       const currentValue = job.path.reduce<any>((value, segment) => value?.[segment], currentRoot);
       if (!isDataImage(currentValue)) {
-        nextCursor++;
+        processed++;
         continue;
       }
 
@@ -291,7 +286,6 @@ export async function POST(request: Request) {
       before += result.before;
       after += result.after;
       processed++;
-      nextCursor++;
     }
 
     for (const key of changedKeys) {
@@ -302,19 +296,23 @@ export async function POST(request: Request) {
       });
     }
 
-    const done = nextCursor >= jobs.length;
+    const latestRows = await loadRows();
+    const latestJobs = (await buildJobs(latestRows)).jobs;
+    const done = latestJobs.length === 0;
+    const nextConfirmationToken = done ? null : signToken(snapshotHash(latestRows), Date.now() + TOKEN_TTL_MS);
     return NextResponse.json({
       ok: true,
       mode: 'migrate',
       processed,
-      total: jobs.length,
-      cursor: nextCursor,
+      batchSize,
+      remaining: latestJobs.length,
       done,
       beforeKb: Number((before / 1024).toFixed(1)),
       afterKb: Number((after / 1024).toFixed(1)),
       savedKb: Number(((before - after) / 1024).toFixed(1)),
       writes: changedKeys.size,
-      message: done ? 'Migração concluída.' : 'Lote concluído. Retome com o cursor retornado.',
+      nextConfirmationToken,
+      message: done ? 'Migração concluída.' : 'Lote concluído. Retome usando o nextConfirmationToken retornado.',
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('[admin-migrate-images]', error);
