@@ -7,7 +7,9 @@
     "inject-nav": "node scripts/inject-nav.mjs",
     "build": "rm -rf public && mkdir -p public && cp -R assets admin pages index.html public/ && npm run inject-nav && next build",
     "start": "next start",
-    "lint": "eslint assets/js"
+    "lint": "eslint assets/js",
+    "migrate": "tsx scripts/migrate.ts",
+    "migrate:images": "tsx scripts/migrate-images.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.15.9",
