@@ -8,12 +8,29 @@ export function requestUserAgent(req: Request) {
   return req.headers.get('user-agent') || 'unknown';
 }
 
+function normalizeOrigin(value: string) {
+  try {
+    const url = new URL(value);
+    return url.origin.replace(/\/$/, '');
+  } catch {
+    return value.replace(/\/$/, '');
+  }
+}
+
 export function sameOrigin(req: Request) {
   const origin = req.headers.get('origin');
   if (origin) {
-    const expected = process.env.NEXT_PUBLIC_SITE_URL || 'https://viremarca-vidracaria-magiaglass.vercel.app';
-    if (origin.replace(/\/$/, '') !== expected.replace(/\/$/, '')) return false;
+    const configured = process.env.NEXT_PUBLIC_SITE_URL;
+    const host = req.headers.get('host');
+    const allowedOrigins = [
+      configured ? normalizeOrigin(configured) : '',
+      host ? normalizeOrigin(`https://${host}`) : '',
+      host ? normalizeOrigin(`http://${host}`) : '',
+    ].filter(Boolean);
+
+    if (!allowedOrigins.includes(normalizeOrigin(origin))) return false;
   }
+
   const fetchSite = req.headers.get('sec-fetch-site');
   if (fetchSite === 'cross-site') return false;
   return true;

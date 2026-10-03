@@ -37,6 +37,7 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
+      { source: '/', destination: '/index.html' },
       { source: '/servicos', destination: '/pages/servicos.html' },
       { source: '/galeria', destination: '/pages/galeria.html' },
       { source: '/contato', destination: '/pages/contato.html' },
