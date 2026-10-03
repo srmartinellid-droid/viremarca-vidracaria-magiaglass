@@ -74,6 +74,12 @@ function normalizeWhatsAppLinks() {
   });
 }
 
+function trackEvent(name, data) {
+  if (typeof window !== 'undefined' && typeof window.va === 'function') {
+    try { window.va('event', name, data || {}); } catch (_) {}
+  }
+}
+
 function initWhatsApp() {
   const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
   const btn = document.querySelector('.whatsapp-float');
@@ -82,6 +88,12 @@ function initWhatsApp() {
     btn.target = '_blank';
     btn.rel = 'noopener';
   }
+  document.querySelectorAll('a[href*="wa.me/"]').forEach(el => {
+    if (!el.dataset.mgTracked) {
+      el.dataset.mgTracked = '1';
+      el.addEventListener('click', () => trackEvent('whatsapp_click', { location: el.className || 'link' }));
+    }
+  });
   document.querySelectorAll('[data-whatsapp]').forEach(el => {
     el.href = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(el.dataset.whatsapp || 'Olá! Gostaria de um orçamento.')}`;
   });
