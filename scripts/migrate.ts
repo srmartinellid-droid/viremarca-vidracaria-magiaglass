@@ -19,7 +19,7 @@ async function main(){
     const result = await db.execute({sql:'SELECT value,updated_at FROM site_content WHERE key=? LIMIT 1',args:[key]});
     snapshot[key] = result.rows[0] || null;
   }
-  if (!dryRun) await fs.writeFile(`.tmp/content-backup-${Date.now()}.json`, JSON.stringify(snapshot,null,2));
+  if (!dryRun) { await fs.mkdir('.tmp', { recursive: true }); await fs.writeFile(`.tmp/content-backup-${Date.now()}.json`, JSON.stringify(snapshot,null,2)); }
 
   await exec('CREATE TABLE IF NOT EXISTS site_content (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL)');
   await exec('CREATE TABLE IF NOT EXISTS admin_users (id INTEGER PRIMARY KEY, password_hash TEXT NOT NULL, updated_at TEXT NOT NULL)');
