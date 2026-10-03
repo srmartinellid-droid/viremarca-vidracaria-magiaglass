@@ -8,8 +8,7 @@
     "build": "rm -rf public && mkdir -p public && cp -R assets admin pages index.html public/ && npm run inject-nav && next build",
     "start": "next start",
     "lint": "eslint assets/js",
-    "migrate": "tsx scripts/migrate.ts",
-    "migrate:images": "tsx scripts/migrate-images.ts"
+    "migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.15.9",

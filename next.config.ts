@@ -29,7 +29,6 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
-      { source: '/index.html', destination: '/', permanent: true },
       { source: '/pages/servicos.html', destination: '/servicos', permanent: true },
       { source: '/pages/galeria.html', destination: '/galeria', permanent: true },
       { source: '/pages/contato.html', destination: '/contato', permanent: true },
