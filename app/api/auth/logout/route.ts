@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { destroySession } from '@/lib/auth';
+import { sameOrigin } from '@/lib/request-security';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

@@ -1,11 +1,24 @@
+import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+
+function validCookie(raw: string | undefined) {
+  if (!raw || !process.env.ADMIN_SECRET) return false;
+  const [token, sig] = raw.split('.');
+  if (!token || !sig || sig.length !== 64) return false;
+  const expected = crypto.createHmac('sha256', process.env.ADMIN_SECRET).update(token).digest('hex');
+  try {
+    return crypto.timingSafeEqual(Buffer.from(sig, 'utf8'), Buffer.from(expected, 'utf8'));
+  } catch {
+    return false;
+  }
+}
+
+export const runtime = 'nodejs';
 
 export function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
-  // Canonical entry point for the administrative area.
-  // The actual UI is the static /admin/index.html document.
   if (path === '/admin' || path === '/admin/') {
     const url = req.nextUrl.clone();
     url.pathname = '/admin/index.html';
@@ -13,13 +26,9 @@ export function middleware(req: NextRequest) {
   }
 
   if (!path.startsWith('/admin/')) return NextResponse.next();
-
-  // Login page must remain publicly reachable.
   if (path === '/admin/index.html') return NextResponse.next();
 
-  // Every other administrative document requires the server session cookie.
-  const cookie = req.cookies.get('mg_admin')?.value;
-  if (!cookie) {
+  if (!validCookie(req.cookies.get('mg_admin')?.value)) {
     const url = req.nextUrl.clone();
     url.pathname = '/admin/index.html';
     return NextResponse.redirect(url);

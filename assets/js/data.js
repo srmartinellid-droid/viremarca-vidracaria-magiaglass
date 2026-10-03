@@ -83,7 +83,7 @@ function initData(){
   return _serverData;
 }
 function isAuthenticated(){const x=xhr('GET','/api/auth/me');try{return !!(x&&x.status===200&&JSON.parse(x.responseText).authenticated);}catch(e){return false;}}
-function login(password){const x=xhr('POST','/api/auth/login',{password});if(x&&x.status>=200&&x.status<300){window.__MG_LOGIN_ERROR='';return true;}try{const payload=x?JSON.parse(x.responseText):null;window.__MG_LOGIN_ERROR=payload&&payload.error?payload.error:'Não foi possível autenticar.';}catch(e){window.__MG_LOGIN_ERROR='Não foi possível conectar ao servidor.';}return false;}
+function login(password){const x=xhr('POST','/api/auth/login',{password});if(x&&x.status>=200&&x.status<300){try{const payload=JSON.parse(x.responseText||'{}');window.__MG_MUST_CHANGE=!!payload.mustChange;}catch(e){window.__MG_MUST_CHANGE=false;}window.__MG_LOGIN_ERROR='';return true;}try{const payload=x?JSON.parse(x.responseText):null;window.__MG_LOGIN_ERROR=payload&&payload.error?payload.error:'Não foi possível autenticar.';}catch(e){window.__MG_LOGIN_ERROR='Não foi possível conectar ao servidor.';}return false;}
 function logout(){xhr('POST','/api/auth/logout');}
 function changePasswordDetailed(oldPass,newPass){const x=xhr('POST','/api/auth/password',{oldPassword:oldPass,newPassword:newPass});let payload=null;try{payload=x?JSON.parse(x.responseText||'{}'):null;}catch(e){}return {ok:!!(x&&x.status>=200&&x.status<300),status:x?x.status:0,error:payload&&payload.error?payload.error:''};}
 function changePassword(oldPass,newPass){return changePasswordDetailed(oldPass,newPass).ok;}

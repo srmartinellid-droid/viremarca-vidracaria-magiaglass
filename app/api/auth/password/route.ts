@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { db, ensureSchema } from '@/lib/db';
 import { isAdmin } from '@/lib/auth';
+import { sameOrigin } from '@/lib/request-security';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,7 @@ const noStore = { 'Cache-Control': 'no-store' };
 
 export async function POST(req: Request) {
   try {
+    if (!sameOrigin(req)) return NextResponse.json({ ok: false, error: 'Origem não permitida.' }, { status: 403, headers: noStore });
     if (!(await isAdmin())) {
       return NextResponse.json(
         { ok: false, error: 'Sessão administrativa expirada ou inválida. Faça login novamente.' },
@@ -56,8 +58,12 @@ export async function POST(req: Request) {
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 12);
+    const columns = await db.execute('PRAGMA table_info(admin_users)');
+    const hasMustChange = columns.rows.some(row => String(row.name) === 'must_change');
     await db.execute({
-      sql: 'UPDATE admin_users SET password_hash=?,updated_at=? WHERE id=1',
+      sql: hasMustChange
+        ? 'UPDATE admin_users SET password_hash=?,must_change=0,updated_at=? WHERE id=1'
+        : 'UPDATE admin_users SET password_hash=?,updated_at=? WHERE id=1',
       args: [passwordHash, new Date().toISOString()],
     });
 

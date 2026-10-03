@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { db, ensureSchema } from '@/lib/db';
 import { DEFAULT_HOME, DEFAULT_SERVICES, DEFAULT_GALLERY, DEFAULT_SETTINGS } from '@/lib/default-data';
 import { isAdmin } from '@/lib/auth';
+import { sameOrigin } from '@/lib/request-security';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ const defaults: Record<string, unknown> = { home: DEFAULT_HOME, services: DEFAUL
 const allowed = new Set(Object.keys(defaults));
 const MAX_CONTENT_BYTES = 3_200_000;
 const MAX_GALLERY_IMAGES = 5;
-const CACHE_CONTROL = 'private, no-cache, stale-while-revalidate=60, stale-if-error=86400';
+const CACHE_CONTROL = 'public, s-maxage=60, stale-while-revalidate=86400';
 
 function makeEtag(content: Record<string, unknown>) {
   const canonical = Object.keys(content).sort().map(key => `${key}:${JSON.stringify(content[key])}`).join('|');
@@ -21,17 +22,18 @@ function makeEtag(content: Record<string, unknown>) {
 export async function GET(req: Request) {
   try {
     await ensureSchema();
-    const result = await db.execute('SELECT key,value FROM site_content');
+    const result = await db.execute('SELECT key,value,updated_at FROM site_content');
     const out: Record<string, unknown> = { ...defaults };
     for (const row of result.rows) {
       try { out[String(row.key)] = JSON.parse(String(row.value)); } catch { /* keep default */ }
     }
 
-    const etag = makeEtag(out);
+    const version = result.rows.map(row => String(row.key) + ':' + String(row.updated_at)).sort().join('|');
+    const etag = `"${createHash('sha256').update(version).digest('hex')}"`;
     const headers = {
       'Cache-Control': CACHE_CONTROL,
       'ETag': etag,
-      'Vary': 'Cookie',
+      'Vary': 'Accept-Encoding',
     };
     if (req.headers.get('if-none-match') === etag) {
       return new NextResponse(null, { status: 304, headers });
@@ -43,6 +45,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  if (!sameOrigin(req)) return NextResponse.json({ error: 'Origem não permitida.' }, { status: 403 });
   if (!(await isAdmin())) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
   try {
