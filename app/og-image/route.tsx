@@ -3,11 +3,21 @@ import { ImageResponse } from 'next/og';
 export const runtime = 'edge';
 const size = { width: 1200, height: 630 };
 
+function arrayBufferToBase64(bytes: ArrayBuffer) {
+  const data = new Uint8Array(bytes);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < data.length; i += chunkSize) {
+    binary += String.fromCharCode(...data.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
 async function readLocalLogo() {
   const response = await fetch(new URL('../../assets/images/logo-profile.png', import.meta.url));
   if (!response.ok) throw new Error('Não foi possível carregar o logo local.');
   const bytes = await response.arrayBuffer();
-  return `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`;
+  return `data:image/png;base64,${arrayBufferToBase64(bytes)}`;
 }
 
 export async function GET() {
