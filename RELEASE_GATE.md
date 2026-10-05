@@ -35,3 +35,8 @@ O workflow `.github/workflows/validate.yml` executa o gate técnico com `npm ci`
 
 ## Regra de parada
 Falha não comprovada não é sucesso. Um terceiro deployment de Production exige parada imediata e aviso ao responsável.
+
+## Estado RC
+- Última correção técnica: build blocker de `app/og-image/route.tsx` removido.
+- Correção de renderização: lock global de visibilidade durante hidratação removido.
+- Próximo gate obrigatório: novo build Vercel + workflow automatizado no HEAD da RC.
