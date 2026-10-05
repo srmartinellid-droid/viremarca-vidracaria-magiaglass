@@ -9,7 +9,7 @@ export function GET() {
     background_color: '#ffffff',
     theme_color: '#1E6A9E',
     lang: 'pt-BR',
-    icons: [{ src: '/favicon.svg?v=2', sizes: '64x64', type: 'image/svg+xml' }],
+    icons: [{ src: '/assets/favicon.svg?v=3', sizes: '64x64', type: 'image/svg+xml' }],
   }, {
     headers: { 'Cache-Control': 'public, max-age=86400' },
   });
