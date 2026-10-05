@@ -81,7 +81,7 @@ function normalizeWhatsAppLinks(phone) {
       const url = new URL(link.href, window.location.origin);
       url.searchParams.set('phone', normalized);
       const text = url.searchParams.get('text');
-      if (text) url.search = '?text=' + encodeURIComponent(text);
+      if (text) url.searchParams.set('text', text);
       link.href = url.toString();
     } catch (_) {}
   });
