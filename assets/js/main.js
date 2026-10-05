@@ -71,12 +71,12 @@ function normalizeWhatsAppNumber(value) {
 
 function buildWhatsAppUrl(phone, text) {
   const normalized = normalizeWhatsAppNumber(phone);
-  return 'https://wa.me/' + normalized + '?text=' + encodeURIComponent(text || 'Olá! Gostaria de um orçamento.');
+  return ''/whatsapp?phone=' + normalized + '?text=' + encodeURIComponent(text || 'Olá! Gostaria de um orçamento.');
 }
 
 function normalizeWhatsAppLinks(phone) {
   const normalized = normalizeWhatsAppNumber(phone);
-  document.querySelectorAll('a[href*="wa.me/"]').forEach(link => {
+  document.querySelectorAll('a[href*="/whatsapp?"]').forEach(link => {
     try {
       const url = new URL(link.href);
       url.pathname = '/' + normalized;
@@ -101,7 +101,7 @@ function initWhatsApp() {
     btn.target = '_blank';
     btn.rel = 'noopener';
   }
-  document.querySelectorAll('a[href*="wa.me/"]').forEach(el => {
+  document.querySelectorAll('a[href*="/whatsapp?"]').forEach(el => {
     if (!el.dataset.mgTracked) {
       el.dataset.mgTracked = '1';
       el.addEventListener('click', () => trackEvent('whatsapp_click', { location: el.className || 'link' }));
@@ -167,7 +167,7 @@ function serviceCardHTML(s, wa, compact) {
         <div class="service-icon" aria-hidden="true">${serviceIcon(s.id)}</div>
         <h3>${s.title}</h3>
         <p>${s.description}</p>
-        <a href="https://wa.me/${wa}?text=${encodeURIComponent('Olá! Quero orçamento de: ' + s.title)}"
+        <a href="/whatsapp?phone=${wa}?text=${encodeURIComponent('Olá! Quero orçamento de: ' + s.title)}"
            class="btn btn-primary ${compact ? 'btn-sm' : ''}" target="_blank" rel="noopener">${compact ? 'Solicitar Orçamento' : 'Pedir Orçamento'}</a>
       </div>
     </div>
@@ -384,7 +384,7 @@ function applySiteFavicon(settings) {
 
 function applySiteLogo() {
   const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
-  applySiteFavicon(settings);
+  
   document.querySelectorAll('[data-site-logo]').forEach(el => {
     if (settings.logo) {
       el.innerHTML = '<img src="' + settings.logo + '" alt="Logo" class="logo-img-upload">';
