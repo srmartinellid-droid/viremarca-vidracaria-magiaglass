@@ -18,7 +18,18 @@ function initNav() {
   const toggle = document.querySelector('.menu-toggle');
   const links = document.querySelector('.nav-links');
   if (toggle && links) {
-    toggle.addEventListener('click', () => links.classList.toggle('open'));
+    toggle.addEventListener('click', () => {
+      const open = links.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+    });
+    links.addEventListener('click', event => {
+      if (event.target.closest('a')) {
+        links.classList.remove('open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', 'Abrir menu');
+      }
+    });
   }
   const path = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.nav-links a').forEach(a => {
@@ -50,6 +61,25 @@ function initNav() {
   window.addEventListener('scroll', updateHeader, { passive: true });
 }
 
+function normalizeWhatsAppLinks() {
+  document.querySelectorAll('a[href*="wa.me/"]').forEach(link => {
+    try {
+      const url = new URL(link.href);
+      const phone = (url.pathname || '').replace(/\\D/g, '');
+      if (phone) url.pathname = '/' + phone;
+      const text = url.searchParams.get('text');
+      if (text) url.search = '?text=' + encodeURIComponent(text);
+      link.href = url.toString();
+    } catch (_) {}
+  });
+}
+
+function trackEvent(name, data) {
+  if (typeof window !== 'undefined' && typeof window.va === 'function') {
+    try { window.va('event', name, data || {}); } catch (_) {}
+  }
+}
+
 function initWhatsApp() {
   const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
   const btn = document.querySelector('.whatsapp-float');
@@ -58,9 +88,16 @@ function initWhatsApp() {
     btn.target = '_blank';
     btn.rel = 'noopener';
   }
+  document.querySelectorAll('a[href*="wa.me/"]').forEach(el => {
+    if (!el.dataset.mgTracked) {
+      el.dataset.mgTracked = '1';
+      el.addEventListener('click', () => trackEvent('whatsapp_click', { location: el.className || 'link' }));
+    }
+  });
   document.querySelectorAll('[data-whatsapp]').forEach(el => {
     el.href = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(el.dataset.whatsapp || 'Olá! Gostaria de um orçamento.')}`;
   });
+  normalizeWhatsAppLinks();
 }
 
 function renderHomeIfNeeded() {
@@ -93,15 +130,28 @@ function renderHomeIfNeeded() {
   }
 }
 
+function serviceIcon(id) {
+  const paths = {
+    box: '<path d="M4 4h16v16H4z"/><path d="M8 4v16M16 4v16M4 10h16"/>',
+    sacadas: '<path d="M4 20h16M6 20V7h12v13M9 7V4h6v3M10 11h4M10 15h4"/>',
+    espelhos: '<circle cx="12" cy="12" r="8"/><path d="M8 15c2-2 4-2 8-6"/>',
+    cristaleira: '<path d="M5 4h14v16H5z"/><path d="M5 10h14M12 4v16M8 7h1M15 7h1"/>',
+    'guarda-corpo': '<path d="M5 20V7M19 20V7M5 10h14M8 20V10M12 20V10M16 20V10"/><path d="M3 20h18"/>',
+    pelicula: '<path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/>'
+  };
+  const body = paths[id] || paths.box;
+  return '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="service-icon-svg">' + body + '</svg>';
+}
+
 function serviceCardHTML(s, wa, compact) {
   const cover = s.image
     ? `<img class="service-cover" src="${s.image}" alt="${s.title}" loading="lazy">`
-    : `<div class="service-cover-placeholder">${s.icon || '✨'}</div>`;
+    : `<div class="service-cover-placeholder">${serviceIcon(s.id)}</div>`;
   return `
     <div class="service-card">
       ${cover}
       <div class="service-body">
-        <div class="service-icon">${s.icon || '✨'}</div>
+        <div class="service-icon" aria-hidden="true">${serviceIcon(s.id)}</div>
         <h3>${s.title}</h3>
         <p>${s.description}</p>
         <a href="https://wa.me/${wa}?text=${encodeURIComponent('Olá! Quero orçamento de: ' + s.title)}"
@@ -169,6 +219,7 @@ let _albumIdx = 0;
 let _photoIdx = 0;
 
 function openAlbum(albumIdx, photoIdx) {
+  _lightboxPreviousFocus = document.activeElement;
   const albums = window._galleryAlbums || [];
   if (!albums.length) return;
   _albumIdx = albumIdx;
@@ -193,7 +244,11 @@ function showAlbumPhoto() {
   } else if (src && src.startsWith('assets/') && pathPrefix) {
     finalSrc = pathPrefix + src;
   }
-  document.getElementById('lightbox-img').src = finalSrc || pathPrefix + 'assets/images/logo-insta.jpeg';
+  const image = document.getElementById('lightbox-img');
+  image.src = finalSrc || pathPrefix + 'assets/images/logo-insta.jpeg';
+  image.alt = album.title || 'Imagem da obra';
+  image.width = 1200;
+  image.height = 900;
   const cap = document.getElementById('lightbox-caption');
   if (cap) {
     cap.innerHTML = '<strong>' + album.title + '</strong>' +
@@ -202,13 +257,34 @@ function showAlbumPhoto() {
   }
   const counter = document.getElementById('lightbox-counter');
   if (counter) counter.textContent = (imgs.length > 1) ? ((_photoIdx + 1) + ' / ' + imgs.length) : '';
+  lb.setAttribute('aria-hidden', 'false');
   lb.classList.add('open');
+  const close = lb.querySelector('.lightbox-close');
+  if (close) close.focus();
 }
+
+let _lightboxPreviousFocus = null;
 
 function closeLightbox() {
   const lb = document.getElementById('lightbox');
-  if (lb) lb.classList.remove('open');
+  if (!lb) return;
+  lb.classList.remove('open');
+  lb.setAttribute('aria-hidden', 'true');
+  if (_lightboxPreviousFocus && typeof _lightboxPreviousFocus.focus === 'function') _lightboxPreviousFocus.focus();
 }
+
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('lightbox');
+  if (!lb || !lb.classList.contains('open')) return;
+  if (e.key === 'Tab') {
+    const focusable = Array.from(lb.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])')).filter(el => !el.disabled);
+    if (!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+});
+
 function lightboxNext() {
   const albums = window._galleryAlbums || [];
   const album = albums[_albumIdx];
@@ -235,21 +311,38 @@ document.addEventListener('keydown', e => {
 
 function initContactForm() {
   const form = document.getElementById('contact-form');
-  if (!form) return;
-  form.addEventListener('submit', (e) => {
+  if (!form || form.dataset.leadBound === '1') return;
+  form.dataset.leadBound = '1';
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = form.querySelector('[name="name"]').value;
-    const phone = form.querySelector('[name="phone"]').value;
+    const name = form.querySelector('[name="name"]').value.trim();
+    const phone = form.querySelector('[name="phone"]').value.trim();
     const service = form.querySelector('[name="service"]').value;
-    const message = form.querySelector('[name="message"]').value;
+    const message = form.querySelector('[name="message"]').value.trim();
+    const website = form.querySelector('[name="website"]')?.value || '';
     const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
-    const text = `Olá! Meu nome é ${name}.%0ATelefone: ${phone}%0AServiço de interesse: ${service}%0AMensagem: ${message}`;
-    window.open(`https://wa.me/${settings.whatsapp}?text=${text}`, '_blank');
-    form.reset();
-    alert('Redirecionando para o WhatsApp...');
+    const text = `Olá! Meu nome é ${name}.\nTelefone: ${phone}\nServiço de interesse: ${service}\nMensagem: ${message}`;
+    const fallback = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(text)}`;
+    try {
+      const response = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome:name, whatsapp:phone, servico:service, mensagem:message, origem:'site-contato', website })
+      });
+      const payload = await response.json().catch(() => ({}));
+      window.open(payload.whatsappUrl || fallback, '_blank', 'noopener');
+      if (response.ok) {
+        form.reset();
+        alert('Contato registrado. Abrindo o WhatsApp...');
+      } else {
+        alert('Abrindo o WhatsApp. O registro automático do contato não pôde ser concluído.');
+      }
+    } catch (_) {
+      window.open(fallback, '_blank', 'noopener');
+      alert('Abrindo o WhatsApp. O registro automático do contato não pôde ser concluído.');
+    }
   });
 }
-
 function formatPhone(phone) {
   const p = phone.replace(/\D/g, '');
   if (p.length === 11) return `(${p.slice(0,2)}) ${p.slice(2,7)}-${p.slice(7)}`;

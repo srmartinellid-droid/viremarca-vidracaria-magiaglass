@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leads | Magia Glass Admin</title><meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="../assets/css/design-system.css"><link rel="icon" href="/favicon.ico">
+<style>.leads-table{width:100%;border-collapse:collapse}.leads-table th,.leads-table td{padding:.7rem;border-bottom:1px solid var(--gray-200);text-align:left;vertical-align:top}.leads-table th{font-size:.8rem;text-transform:uppercase;color:var(--gray-600)}.lead-message{max-width:320px;white-space:pre-wrap}.filters{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}</style>
+</head>
+<body>
+<div class="admin-layout">
+<aside class="admin-sidebar"><div class="logo"><div class="logo-text" style="color:white;">MAGIA GLASS<span style="color:rgba(255,255,255,.6);">ADMIN</span></div></div>
+<nav class="admin-nav"><a href="dashboard.html">Dashboard</a><a href="leads.html" class="active">Leads</a><a href="home.html">Editar Home</a><a href="services.html">Serviços</a><a href="gallery.html">Galeria</a><a href="marketing.html">Marketing</a><a href="settings.html">Configurações</a><a href="password.html">Alterar Senha</a><a href="/">Ver Site</a><a href="#" id="logout">Sair</a></nav></aside>
+<main class="admin-main"><div class="admin-header"><h1 style="font-family:var(--font-display);font-size:1.75rem;">Leads</h1><a class="btn btn-secondary btn-sm" href="/api/leads/export">Exportar CSV</a></div>
+<div class="admin-card"><div class="filters"><button class="btn btn-secondary btn-sm" id="prev">Anterior</button><span id="page">Página 1</span><button class="btn btn-secondary btn-sm" id="next">Próxima</button><span id="total"></span></div>
+<div style="overflow:auto"><table class="leads-table"><thead><tr><th>Data</th><th>Nome</th><th>WhatsApp</th><th>Serviço</th><th>Mensagem</th><th>Status</th><th>Nota</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="8">Carregando...</td></tr></tbody></table></div></div></main>
+</div>
+<script>
+let page=1,total=0;
+const statuses=['novo','contatado','orçamento','fechado','perdido'];
+async function api(url,options){const r=await fetch(url,{credentials:'include',...(options||{})});if(r.status===401){location.href='/admin/index.html';throw new Error('unauthorized');}return r;}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function load(){const r=await api('/api/leads?page='+page+'&limit=20');const d=await r.json();total=d.total;document.getElementById('page').textContent='Página '+page;document.getElementById('total').textContent=total+' lead(s)';document.getElementById('rows').innerHTML=d.items.map(x=>'<tr><td>'+esc(new Date(x.created_at).toLocaleString('pt-BR'))+'</td><td>'+esc(x.nome)+'</td><td><a href="https://wa.me/'+esc(x.whatsapp.replace(/\D/g,''))+'" target="_blank" rel="noopener">'+esc(x.whatsapp)+'</a></td><td>'+esc(x.servico)+'</td><td class="lead-message">'+esc(x.mensagem)+'</td><td><select data-id="'+x.id+'" data-field="status">'+statuses.map(s=>'<option '+(s===x.status?'selected':'')+'>'+esc(s)+'</option>').join('')+'</select></td><td><input data-id="'+x.id+'" data-field="nota" value="'+esc(x.nota)+'" maxlength="500"></td><td><button class="btn btn-primary btn-sm" data-save="'+x.id+'">Salvar</button></td></tr>').join('')||'<tr><td colspan="8">Nenhum lead.</td></tr>';document.querySelectorAll('[data-save]').forEach(b=>b.onclick=()=>save(Number(b.dataset.save)));document.querySelectorAll('[data-field]').forEach(el=>el.addEventListener('change',()=>save(Number(el.dataset.id))));}
+async function save(id){const status=document.querySelector('[data-id="'+id+'"][data-field="status"]').value;const nota=document.querySelector('[data-id="'+id+'"][data-field="nota"]').value;const r=await api('/api/leads',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,status,nota})});if(r.ok)load();}
+document.getElementById('prev').onclick=()=>{if(page>1){page--;load();}};document.getElementById('next').onclick=()=>{if(page*20<total){page++;load();}};document.getElementById('logout').onclick=async e=>{e.preventDefault();await fetch('/api/auth/logout',{method:'POST',credentials:'include'});location.href='/admin/index.html';};load();
+</script>
+</body></html>

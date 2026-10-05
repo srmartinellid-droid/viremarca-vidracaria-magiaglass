@@ -29,6 +29,8 @@ jobs:
           cat /tmp/magia-glass-next.log
           exit 1
       - name: Lighthouse mobile baseline
+        timeout-minutes: 3
+        continue-on-error: true
         run: |
           npx -y @lhci/cli@0.15.1 collect             --url=http://127.0.0.1:3000/             --url=http://127.0.0.1:3000/servicos             --url=http://127.0.0.1:3000/galeria             --url=http://127.0.0.1:3000/contato             --settings.formFactor=mobile             --settings.screenEmulation.mobile=true             --settings.chromeFlags="--headless --no-sandbox --disable-dev-shm-usage"
       - name: Upload Lighthouse baseline

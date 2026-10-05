@@ -1294,3 +1294,10 @@ textarea.form-control {
 @media (max-width: 768px) {
   .logo-img-upload { height: 64px; max-width: 210px; }
 }
+
+
+/* Acessibilidade de serviços */
+.service-icon-svg { width: 2rem; height: 2rem; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.service-cover-placeholder .service-icon-svg { width: 3.25rem; height: 3.25rem; }
+.menu-toggle { min-width: 44px; min-height: 44px; }
+.menu-toggle:focus-visible, .nav-links a:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 3px solid var(--accent, #2EB8A0); outline-offset: 3px; }
