@@ -1,7 +1,9 @@
 import { createClient } from '@libsql/client';
 
+const databaseUrl = process.env.TURSO_DATABASE_URL || 'https://magiaglass-build-placeholder.invalid';
+
 export const db = createClient({
-  url: process.env.TURSO_DATABASE_URL || '',
+  url: databaseUrl,
   authToken: process.env.TURSO_AUTH_TOKEN,
 });
 
