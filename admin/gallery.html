@@ -6,6 +6,48 @@
   <title>Galeria | Magia Glass Admin</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/design-system.css">
+  <style>
+    body.gallery-modal-open { overflow: hidden; }
+    body.gallery-modal-open::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 39, 68, 0.58);
+      backdrop-filter: blur(2px);
+      z-index: 900;
+    }
+    #form-card.gallery-modal {
+      position: fixed;
+      inset: 50% auto auto 50%;
+      transform: translate(-50%, -50%);
+      width: min(760px, calc(100vw - 2rem));
+      max-height: min(88vh, 820px);
+      overflow: auto;
+      z-index: 901;
+      margin: 0;
+      box-shadow: 0 24px 80px rgba(15, 39, 68, 0.28);
+      border: 1px solid rgba(255,255,255,.7);
+    }
+    #form-card.gallery-modal .gallery-modal-close {
+      position: absolute;
+      top: .85rem;
+      right: .85rem;
+      width: 40px;
+      height: 40px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--gray-100);
+      color: var(--gray-700);
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+    @media (max-width: 640px) {
+      #form-card.gallery-modal {
+        width: calc(100vw - 1rem);
+        max-height: calc(100vh - 1rem);
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="admin-layout">
@@ -17,8 +59,9 @@
     </aside>
     <main class="admin-main">
       <div class="admin-header"><h1 style="font-family:var(--font-display);">Galeria de Publicações (álbuns)</h1><button class="btn btn-primary btn-sm" onclick="showForm()">+ Novo Item</button></div>
-      <div class="admin-card" id="form-card" style="display:none;">
-        <h3 id="form-title">Novo Item na Galeria</h3>
+      <div class="admin-card gallery-modal" id="form-card" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="form-title">
+        <button type="button" class="gallery-modal-close" aria-label="Fechar editor" onclick="hideForm()">×</button>
+        <h3 id="form-title" style="padding-right:3rem;">Novo Item na Galeria</h3>
         <form id="gallery-form">
           <input type="hidden" id="g-id"><div class="form-group"><label>Título</label><input type="text" id="g-title" class="form-control" required></div><div class="form-group"><label>Descrição</label><textarea id="g-description" class="form-control" rows="2"></textarea></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;"><div class="form-group"><label>Categoria</label><input type="text" id="g-category" class="form-control" placeholder="Ex: Box"></div><div class="form-group"><label>Data</label><input type="date" id="g-date" class="form-control"></div></div>
@@ -78,6 +121,7 @@
     }
 
     function showForm() {
+      document.body.classList.add('gallery-modal-open');
       document.getElementById('form-card').style.display = 'block';
       document.getElementById('form-title').textContent = 'Novo Item';
       document.getElementById('gallery-form').reset();
@@ -89,7 +133,14 @@
       document.getElementById('g-date').value = new Date().toISOString().slice(0,10);
     }
 
-    function hideForm() { document.getElementById('form-card').style.display = 'none'; }
+    function hideForm() {
+      document.getElementById('form-card').style.display = 'none';
+      document.body.classList.remove('gallery-modal-open');
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && document.body.classList.contains('gallery-modal-open')) hideForm();
+    });
 
     function editItemById(id) {
       const list = getData(STORAGE_KEYS.gallery, DEFAULT_GALLERY); const item = list.find(i => i.id === id);
