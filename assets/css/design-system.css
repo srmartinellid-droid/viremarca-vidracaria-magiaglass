@@ -185,14 +185,37 @@ button, input, textarea, select {
 }
 
 .btn-whatsapp {
+  position: relative;
+  isolation: isolate;
   background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
   color: var(--white);
   box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  animation: whatsappGlow 2.8s ease-in-out infinite;
+}
+
+.btn-whatsapp:hover {
+  animation-play-state: paused;
 }
 
 .btn-whatsapp:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(37, 211, 102, 0.45);
+}
+
+@keyframes whatsappGlow {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+  }
+  50% {
+    box-shadow: 0 7px 28px rgba(37, 211, 102, 0.62), 0 0 0 7px rgba(37, 211, 102, 0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-whatsapp,
+  .whatsapp-float {
+    animation: none;
+  }
 }
 
 .btn-outline {
