@@ -41,3 +41,4 @@ Falha não comprovada não é sucesso. Um terceiro deployment de Production exig
 - Correção de renderização: lock global de visibilidade durante hidratação removido.
 - Próximo gate obrigatório: novo build Vercel + workflow automatizado no HEAD da RC.
 - Trigger de validação: commit técnico atualiza a RC para forçar os webhooks de GitHub Actions e Vercel.
+- Integração Vercel: projeto Git reutilizado/revinculado ao repositório para reativar deploys.
