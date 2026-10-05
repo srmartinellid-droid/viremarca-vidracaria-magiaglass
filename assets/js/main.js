@@ -61,12 +61,25 @@ function initNav() {
   window.addEventListener('scroll', updateHeader, { passive: true });
 }
 
-function normalizeWhatsAppLinks() {
+function normalizeWhatsAppNumber(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (!digits) return '5548992220593';
+  if (digits.startsWith('55') && digits.length >= 12) return digits;
+  if (digits.length === 10 || digits.length === 11) return '55' + digits;
+  return digits;
+}
+
+function buildWhatsAppUrl(phone, text) {
+  const normalized = normalizeWhatsAppNumber(phone);
+  return 'https://wa.me/' + normalized + '?text=' + encodeURIComponent(text || 'Olá! Gostaria de um orçamento.');
+}
+
+function normalizeWhatsAppLinks(phone) {
+  const normalized = normalizeWhatsAppNumber(phone);
   document.querySelectorAll('a[href*="wa.me/"]').forEach(link => {
     try {
       const url = new URL(link.href);
-      const phone = (url.pathname || '').replace(/\\D/g, '');
-      if (phone) url.pathname = '/' + phone;
+      url.pathname = '/' + normalized;
       const text = url.searchParams.get('text');
       if (text) url.search = '?text=' + encodeURIComponent(text);
       link.href = url.toString();
@@ -84,7 +97,7 @@ function initWhatsApp() {
   const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
   const btn = document.querySelector('.whatsapp-float');
   if (btn) {
-    btn.href = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent('Olá! Vim pelo site da Magia Glass e gostaria de um orçamento.')}`;
+    btn.href = buildWhatsAppUrl(settings.whatsapp, 'Olá! Vim pelo site da Magia Glass e gostaria de um orçamento.');
     btn.target = '_blank';
     btn.rel = 'noopener';
   }
@@ -95,9 +108,9 @@ function initWhatsApp() {
     }
   });
   document.querySelectorAll('[data-whatsapp]').forEach(el => {
-    el.href = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(el.dataset.whatsapp || 'Olá! Gostaria de um orçamento.')}`;
+    el.href = buildWhatsAppUrl(settings.whatsapp, el.dataset.whatsapp || 'Olá! Gostaria de um orçamento.');
   });
-  normalizeWhatsAppLinks();
+  normalizeWhatsAppLinks(settings.whatsapp);
 }
 
 function renderHomeIfNeeded() {
@@ -121,7 +134,7 @@ function renderHomeIfNeeded() {
 
   const servicesContainer = document.querySelector('[data-home="services"]');
   if (servicesContainer) {
-    const wa = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS).whatsapp;
+    const wa = normalizeWhatsAppNumber(getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS).whatsapp);
     const services = getData(STORAGE_KEYS.services, DEFAULT_SERVICES)
       .filter(s => s.featured)
       .sort((a, b) => a.order - b.order)
@@ -182,7 +195,7 @@ function renderGalleryIfNeeded() {
   const container = document.querySelector('[data-gallery="grid"]');
   if (!container) return;
   const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
-  const wa = settings.whatsapp;
+  const wa = normalizeWhatsAppNumber(settings.whatsapp);
   const items = getData(STORAGE_KEYS.gallery, DEFAULT_GALLERY)
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   const pathPrefix = window.location.pathname.includes('/pages/') ? '../' : '';
@@ -322,7 +335,7 @@ function initContactForm() {
     const website = form.querySelector('[name="website"]')?.value || '';
     const settings = getData(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
     const text = `Olá! Meu nome é ${name}.\nTelefone: ${phone}\nServiço de interesse: ${service}\nMensagem: ${message}`;
-    const fallback = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(text)}`;
+    const fallback = buildWhatsAppUrl(settings.whatsapp, text);
     try {
       const response = await fetch('/api/leads', {
         method: 'POST',
