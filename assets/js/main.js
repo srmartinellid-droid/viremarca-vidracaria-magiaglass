@@ -71,15 +71,15 @@ function normalizeWhatsAppNumber(value) {
 
 function buildWhatsAppUrl(phone, text) {
   const normalized = normalizeWhatsAppNumber(phone);
-  return ''/whatsapp?phone=' + normalized + '?text=' + encodeURIComponent(text || 'Olá! Gostaria de um orçamento.');
+  return '/whatsapp?phone=' + normalized + '&text=' + encodeURIComponent(text || 'Olá! Gostaria de um orçamento.');
 }
 
 function normalizeWhatsAppLinks(phone) {
   const normalized = normalizeWhatsAppNumber(phone);
   document.querySelectorAll('a[href*="/whatsapp?"]').forEach(link => {
     try {
-      const url = new URL(link.href);
-      url.pathname = '/' + normalized;
+      const url = new URL(link.href, window.location.origin);
+      url.searchParams.set('phone', normalized);
       const text = url.searchParams.get('text');
       if (text) url.search = '?text=' + encodeURIComponent(text);
       link.href = url.toString();
@@ -167,7 +167,7 @@ function serviceCardHTML(s, wa, compact) {
         <div class="service-icon" aria-hidden="true">${serviceIcon(s.id)}</div>
         <h3>${s.title}</h3>
         <p>${s.description}</p>
-        <a href="/whatsapp?phone=${wa}?text=${encodeURIComponent('Olá! Quero orçamento de: ' + s.title)}"
+        <a href="/whatsapp?phone=${wa}&text=${encodeURIComponent('Olá! Quero orçamento de: ' + s.title)}"
            class="btn btn-primary ${compact ? 'btn-sm' : ''}" target="_blank" rel="noopener">${compact ? 'Solicitar Orçamento' : 'Pedir Orçamento'}</a>
       </div>
     </div>
