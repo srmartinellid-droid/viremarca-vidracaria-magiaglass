@@ -1,4 +1,4 @@
-export const dynamic = 'force-static';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   const response = await fetch(new URL('/assets/images/logo-insta.jpeg', request.url));
