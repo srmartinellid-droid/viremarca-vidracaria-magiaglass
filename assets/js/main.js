@@ -71,18 +71,18 @@ function normalizeWhatsAppNumber(value) {
 
 function buildWhatsAppUrl(phone, text) {
   const normalized = normalizeWhatsAppNumber(phone);
-  return '/whatsapp?phone=' + normalized + '&text=' + encodeURIComponent(text || 'Olá! Gostaria de um orçamento.');
+  return 'https://wa.me/' + normalized + '?text=' + encodeURIComponent(text || 'Olá! Gostaria de um orçamento.');
 }
 
 function normalizeWhatsAppLinks(phone) {
   const normalized = normalizeWhatsAppNumber(phone);
   document.querySelectorAll('a[href*="/whatsapp?"]').forEach(link => {
     try {
-      const url = new URL(link.href, window.location.origin);
-      url.searchParams.set('phone', normalized);
-      const text = url.searchParams.get('text');
-      if (text) url.searchParams.set('text', text);
-      link.href = url.toString();
+      const current = new URL(link.href, window.location.origin);
+      const text = current.searchParams.get('text') || '';
+      const target = new URL('https://wa.me/' + normalized);
+      if (text) target.searchParams.set('text', text);
+      link.href = target.toString();
     } catch (_) {}
   });
 }
