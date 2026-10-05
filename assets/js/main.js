@@ -76,7 +76,7 @@ function buildWhatsAppUrl(phone, text) {
 
 function normalizeWhatsAppLinks(phone) {
   const normalized = normalizeWhatsAppNumber(phone);
-  document.querySelectorAll('a[href*="/whatsapp?"]').forEach(link => {
+  document.querySelectorAll('a[href*="/whatsapp?"], a[href*="wa.me/"]').forEach(link => {
     try {
       const current = new URL(link.href, window.location.origin);
       const text = current.searchParams.get('text') || '';
@@ -101,7 +101,7 @@ function initWhatsApp() {
     btn.target = '_blank';
     btn.rel = 'noopener';
   }
-  document.querySelectorAll('a[href*="/whatsapp?"]').forEach(el => {
+  document.querySelectorAll('a[href*="/whatsapp?"], a[href*="wa.me/"]').forEach(el => {
     if (!el.dataset.mgTracked) {
       el.dataset.mgTracked = '1';
       el.addEventListener('click', () => trackEvent('whatsapp_click', { location: el.className || 'link' }));
