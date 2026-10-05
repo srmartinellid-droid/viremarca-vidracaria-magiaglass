@@ -94,7 +94,6 @@ function injectRuntimeUIRules(){
   style.id='mg-runtime-ui-rules';
   style.textContent=`
     html.mg-site-loading { background:#fff; }
-    html.mg-site-loading body, html.mg-awaiting-data body { visibility:hidden !important; }
     body:not(:has(.hero)) .section:first-of-type { padding-top:calc(var(--space-3xl, 3rem) + 104px) !important; }
     .hero-badge { display:none !important; }
     .admin-sidebar .logo img[src*="logo-insta"], .footer-brand img[src*="logo-insta"] { visibility:hidden !important; }
