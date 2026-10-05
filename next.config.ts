@@ -27,6 +27,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }];
   },
+  async rewrites() {
+    return [{ source: '/favicon.ico', destination: '/favicon' }];
+  },
   async redirects() {
     return [
       { source: '/pages/servicos.html', destination: '/servicos', permanent: true },
