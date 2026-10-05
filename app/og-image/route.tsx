@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
+
 function arrayBufferToBase64(bytes: ArrayBuffer) {
   const data = new Uint8Array(bytes);
   let binary = '';
@@ -11,15 +12,15 @@ function arrayBufferToBase64(bytes: ArrayBuffer) {
   return btoa(binary);
 }
 
-async function readLocalLogo() {
-  const response = await fetch(new URL('../../assets/images/logo-profile.png', import.meta.url));
+async function readPublicLogo(requestUrl: string) {
+  const response = await fetch(new URL('/images/logo-profile.png', requestUrl));
   if (!response.ok) throw new Error('Não foi possível carregar o logo local.');
   const bytes = await response.arrayBuffer();
   return `data:image/png;base64,${arrayBufferToBase64(bytes)}`;
 }
 
-export async function GET() {
-  const logo = await readLocalLogo();
+export async function GET(request: Request) {
+  const logo = await readPublicLogo(request.url);
   return new ImageResponse(
     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7FAFC', color: '#0F2744', fontFamily: 'sans-serif' }}>
       <div style={{ width: 630, height: 630, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
