@@ -37,7 +37,6 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      { source: '/favicon.ico', destination: '/favicon' },
       { source: '/build-info.json', destination: '/build-info' },
       { source: '/', destination: '/index.html' },
       { source: '/servicos', destination: '/pages/servicos.html' },
