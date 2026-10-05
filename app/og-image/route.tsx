@@ -1,8 +1,6 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-const size = { width: 1200, height: 630 };
-
 function arrayBufferToBase64(bytes: ArrayBuffer) {
   const data = new Uint8Array(bytes);
   let binary = '';
@@ -32,6 +30,6 @@ export async function GET() {
         <div style={{ fontSize: 24, color: '#475569' }}>Magia Glass · Norte da Ilha · Florianópolis/SC</div>
       </div>
     </div>,
-    size
+    { width: 1200, height: 630 }
   );
 }
