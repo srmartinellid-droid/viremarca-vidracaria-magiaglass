@@ -1301,3 +1301,29 @@ textarea.form-control {
 .service-cover-placeholder .service-icon-svg { width: 3.25rem; height: 3.25rem; }
 .menu-toggle { min-width: 44px; min-height: 44px; }
 .menu-toggle:focus-visible, .nav-links a:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible { outline: 3px solid var(--accent, #2EB8A0); outline-offset: 3px; }
+
+.viremarca-credit {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(46, 184, 160, 0.65);
+  text-underline-offset: 0.18em;
+}
+.viremarca-credit:hover { color: var(--accent); text-decoration-color: currentColor; }
+.process-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
+  margin-top: var(--space-2xl);
+}
+.process-card { position: relative; padding: 1.5rem; min-height: 190px; border: 1px solid rgba(30,106,158,0.1); background: rgba(255,255,255,0.78); }
+.process-number {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--accent-soft); color: var(--primary);
+  font-family: var(--font-display); font-weight: 700; margin-bottom: 1rem;
+}
+.process-card h3 { font-family: var(--font-display); font-size: 1.08rem; margin-bottom: 0.45rem; }
+.process-card p { color: var(--gray-600); font-size: 0.9rem; line-height: 1.55; }
+@media (max-width: 900px) { .process-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .process-grid { grid-template-columns: 1fr; } .process-card { min-height: auto; } }
