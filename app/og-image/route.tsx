@@ -13,10 +13,10 @@ function arrayBufferToBase64(bytes: ArrayBuffer) {
 }
 
 async function readPublicLogo(requestUrl: string) {
-  const response = await fetch(new URL('/images/logo-profile.png', requestUrl));
+  const response = await fetch(new URL('/assets/images/logo-insta.jpeg', requestUrl));
   if (!response.ok) throw new Error('Não foi possível carregar o logo local.');
   const bytes = await response.arrayBuffer();
-  return `data:image/png;base64,${arrayBufferToBase64(bytes)}`;
+  return `data:image/jpeg;base64,${arrayBufferToBase64(bytes)}`;
 }
 
 export async function GET(request: Request) {
